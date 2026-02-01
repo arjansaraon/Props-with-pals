@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Props-With-Pals
+
+A mobile-friendly web app for running prop bet pools with friends. The "captain" (admin) creates betting pools, adds multiple-choice prop questions with custom point values, and tracks results live. Friends join with a simple invite code - no accounts needed.
+
+**Core Innovation**: Simple, social betting pools without the complexity. Captain handles all the admin (setting up props, marking winners, Venmo settlements), while participants just pick and watch the leaderboard.
+
+**Platform Strategy**: Built with Next.js for a mobile-first web experience that works great on any device.
+
+## Project Navigation
+
+- **[docs/VISION.md](docs/VISION.md)** - High-level product vision, features, success criteria
+- **[docs/ROADMAP.md](docs/ROADMAP.md)** - Development phases, milestones, decisions log
+- **[docs/DATA-MODEL.md](docs/DATA-MODEL.md)** - Database schema, entities, relationships
+- **[design/design-principles.md](design/design-principles.md)** - Core design principles
+- **[design/ux-guide.md](design/ux-guide.md)** - UX patterns and guidelines
+- **[features/](features/)** - Feature specifications organized by phase
+
+## Current Status
+
+- **Phase: Setup** - Project initialized, documentation structure in place
+- **Next: Define data model and core features**
+
+## Tech Stack
+
+- **Next.js 14** (App Router) - Full-stack React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Mobile-first styling
+- **SQLite** (planned) - Simple, local database
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm
+
+### Installation
+
+1. Navigate to the project directory:
+```bash
+cd Props-With-Pals
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Opens at `http://localhost:3000` with hot reload enabled.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Building
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+```
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+Props-With-Pals/
+├── app/                    # Next.js App Router pages
+│   ├── page.tsx            # Home page
+│   ├── layout.tsx          # Root layout
+│   └── globals.css         # Global styles
+├── docs/                   # Product documentation
+│   ├── VISION.md           # Product vision and roadmap
+│   └── DATA-MODEL.md       # Database schema (to be defined)
+├── design/                 # Design documentation
+│   ├── design-principles.md
+│   └── ux-guide.md
+├── features/               # Feature specifications
+│   └── mvp/
+├── public/                 # Static assets
+├── package.json
+└── tsconfig.json
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## How It Works
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Captain (Admin) Flow
+1. Create a new pool (e.g., "Super Bowl 2026")
+2. Set Venmo buy-in amount (displayed to users)
+3. Add prop bets as multiple-choice questions with point values
+4. Share invite code with friends
+5. Lock betting when the event starts
+6. Update correct answers live as events happen
+7. View final leaderboard and settle up on Venmo
 
-## Deploy on Vercel
+### Participant Flow
+1. Join pool with invite code + name
+2. See all prop bets and point values
+3. Submit picks (hidden from others until lock)
+4. Watch live leaderboard as captain updates results
+5. See final standings
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Development Principles
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 1. Update Over Add
+- Modify existing code first
+- Refactor before adding
+- Don't duplicate logic
+
+### 2. File Size & Modularity
+- Keep files under 300 lines
+- Separate concerns (logic, UI, utilities)
+- Don't create premature abstractions
+
+### 3. Ask Questions, Don't Assume
+- Unclear requirements? Ask first
+- Multiple valid approaches? Present options
+- Never guess - assumptions lead to rework
+
+### 4. Separate Business Logic from UI
+- Business logic in hooks/utils
+- Components render UI only
+- Pure functions when possible
+
+### Key Files
+- [app/page.tsx](app/page.tsx) - Main page
+- [docs/VISION.md](docs/VISION.md) - Product vision
+
+## License
+
+MIT
