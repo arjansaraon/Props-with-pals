@@ -16,12 +16,11 @@ The main container for a betting event.
 |-------|------|----------|-------------|
 | `id` | string (UUID) | Yes | Unique identifier |
 | `name` | string | Yes | Pool name (e.g., "Super Bowl 2026") |
-| `invite_code` | string(6) | Yes | Unique code for joining |
+| `invite_code` | string(6) | Yes | Unique code for joining (A-Z, 2-9, no ambiguous chars) |
 | `buy_in_amount` | string | No | Informational (e.g., "$20") |
 | `captain_name` | string | Yes | Who created it |
 | `captain_secret` | string | Yes | For captain access |
 | `status` | enum | Yes | draft, open, locked, completed |
-| `lock_at` | timestamp | No | Scheduled auto-lock time |
 | `created_at` | timestamp | Yes | When pool was created |
 | `updated_at` | timestamp | Yes | Last modification |
 
@@ -83,9 +82,11 @@ Prop (1) ──── (many) Pick
 ```
 
 **Constraints:**
-- One pick per participant per prop (unique constraint on participant_id + prop_id)
+- One pick per participant per prop (unique constraint on `participant_id` + `prop_id`)
 - Props belong to exactly one pool
 - Participants belong to exactly one pool
+- Participant names must be unique within a pool (unique constraint on `pool_id` + `name`, error: "Name already taken")
+- Captain is auto-added as a participant when pool is created
 
 ## Database Indexes
 
@@ -95,6 +96,7 @@ Prop (1) ──── (many) Pick
 | Prop | `pool_id` | Get all props for a pool |
 | Prop | `pool_id, order` | Get props in display order |
 | Participant | `pool_id` | Get all participants for a pool |
+| Participant | `pool_id, name` (unique) | Enforce unique names per pool |
 | Participant | `pool_id, secret` | Auth participant |
 | Pick | `participant_id` | Get all picks by participant |
 | Pick | `prop_id` | Get all picks for a prop |
@@ -151,14 +153,23 @@ active → removed
 
 | Actor | Identified By | Can Do |
 |-------|---------------|--------|
-| Captain | `invite_code` + `captain_secret` | Everything for their pool |
-| Participant | `pool_id` + `secret` | View props, submit picks, view leaderboard |
+| Captain | `invite_code` + `captain_secret` | Everything for their pool (admin + their own picks) |
+| Participant | `invite_code` + `participant.secret` | View props, submit picks, view leaderboard |
 | Anonymous | `invite_code` only | See pool exists, join as new participant |
 
 **Notes:**
+- Captain uses `captain_secret` for both admin actions AND their own picks (one URL to save)
+- Secrets are UUIDs generated with `crypto.randomUUID()`
 - Secrets stored as plain strings (not hashed) - acceptable for low-stakes friend app
-- Secrets passed via URL params or stored in cookies
-- Picks hidden from other participants until pool status = locked
+- Phase 1: Secrets passed via URL params only (no localStorage)
+- Phase 2+: Secrets persisted in localStorage
+- Picks hidden from other participants (Phase 3: visible after lock)
+
+**URL Structure:**
+- Join pool: `/pool/{invite_code}` - anyone can join
+- Captain dashboard: `/pool/{invite_code}/captain?secret={captain_secret}` - includes captain's picks
+- Participant view: `/pool/{invite_code}/picks?secret={participant_secret}`
+- Shareable participant link includes their secret (Phase 3: easy copy/share)
 
 ## Future-Proofing Fields
 
@@ -166,7 +177,7 @@ These nullable fields support future features without migrations:
 
 | Field | Future Feature |
 |-------|----------------|
-| `Pool.lock_at` | Scheduled auto-lock |
+| `Pool.lock_at` | Scheduled auto-lock (add field when implementing) |
 | `Prop.category` | Prop grouping/sections |
 | `Participant.paid` | Payment tracking |
 | `Prop.status` | Void/nullify props |
@@ -178,11 +189,14 @@ These nullable fields support future features without migrations:
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Database | SQLite | Simple, no server needed, easy backup |
+| Database | Turso (SQLite-compatible) | Serverless-native, works with Vercel |
+| ORM | Drizzle | TypeScript-first, works with Turso |
 | IDs | UUIDs | No sequential guessing, globally unique |
+| Secrets | UUIDs | Same format as IDs, `crypto.randomUUID()` |
+| Invite codes | 6 chars, A-Z + 2-9 (no 0,1,O,I,L) | 32^6 = 1B+ combinations, easy to read/type |
 | Options storage | JSON array | Flexible, simple queries |
 | Points calculation | Stored + calculated | `points_earned` on Pick, `total_points` on Participant updated on resolve |
+| Captain participation | Auto-added as participant | Simplest - captain can play too |
+| Captain auth | Same secret for both roles | Captain uses `captain_secret` for admin and picks |
+| Duplicate picks | Overwrite existing | Allows changing mind before lock |
 
----
-
-**Next Step**: Choose SQLite library and begin implementation

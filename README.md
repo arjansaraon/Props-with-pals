@@ -13,6 +13,7 @@ A mobile-friendly web app for running prop bet pools with friends. The "captain"
 - **[docs/DATA-MODEL.md](docs/DATA-MODEL.md)** - Database schema, entities, relationships
 - **[design/design-principles.md](design/design-principles.md)** - Core design principles
 - **[design/ux-guide.md](design/ux-guide.md)** - UX patterns and guidelines
+- **[design/technical-considerations.md](design/technical-considerations.md)** - Performance goals, architecture
 - **[features/](features/)** - Feature specifications organized by phase
 
 ## Current Status
