@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pools, participants } from '@/src/lib/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { JoinPoolSchema } from '@/src/lib/validators';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
@@ -54,26 +54,7 @@ export async function joinPoolHandler(
 
     const { name } = parseResult.data;
 
-    // Check if name is already taken in this pool
-    const existingParticipant = await database
-      .select()
-      .from(participants)
-      .where(
-        and(
-          eq(participants.poolId, pool.id),
-          eq(participants.name, name)
-        )
-      )
-      .limit(1);
-
-    if (existingParticipant.length > 0) {
-      return NextResponse.json(
-        { code: 'NAME_TAKEN', message: 'Name is already taken in this pool' },
-        { status: 409 }
-      );
-    }
-
-    // Create the participant
+    // Create the participant (rely on unique constraint for duplicate detection)
     const participantId = crypto.randomUUID();
     const participantSecret = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -103,6 +84,21 @@ export async function joinPoolHandler(
       { status: 201 }
     );
   } catch (error) {
+    // Handle unique constraint violation (duplicate name in pool)
+    // Drizzle wraps SQLite errors - check both error.message and error.cause
+    const isUniqueConstraintError =
+      error instanceof Error &&
+      (error.message.includes('UNIQUE constraint failed') ||
+        (error.cause instanceof Error &&
+          error.cause.message.includes('UNIQUE constraint failed')));
+
+    if (isUniqueConstraintError) {
+      return NextResponse.json(
+        { code: 'NAME_TAKEN', message: 'Name is already taken in this pool' },
+        { status: 409 }
+      );
+    }
+
     console.error('Error joining pool:', error);
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to join pool' },

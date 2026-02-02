@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { pools, props, picks, participants } from '@/src/lib/schema';
-import { eq, and, sum, isNull } from 'drizzle-orm';
+import { eq, and, sum, isNull, inArray } from 'drizzle-orm';
 import { ResolveSchema } from '@/src/lib/validators';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
@@ -149,25 +149,31 @@ export async function resolvePropHandler(
           .where(eq(picks.id, pick.id));
       }
 
-      // 4. Update participant totals
+      // 4. Update participant totals (optimized: single query to get all totals)
       const affectedParticipantIds = [...new Set(allPicks.map((p) => p.participantId))];
 
-      for (const participantId of affectedParticipantIds) {
-        // Sum all points_earned for this participant
-        const totalResult = await tx
-          .select({ total: sum(picks.pointsEarned) })
-          .from(picks)
-          .where(eq(picks.participantId, participantId));
-
-        const totalPoints = Number(totalResult[0]?.total) || 0;
-
-        await tx
-          .update(participants)
-          .set({
-            totalPoints,
-            updatedAt: now,
+      if (affectedParticipantIds.length > 0) {
+        // Get all participant totals in one query instead of N queries
+        const allTotals = await tx
+          .select({
+            participantId: picks.participantId,
+            total: sum(picks.pointsEarned),
           })
-          .where(eq(participants.id, participantId));
+          .from(picks)
+          .where(inArray(picks.participantId, affectedParticipantIds))
+          .groupBy(picks.participantId);
+
+        // Update each participant with their new total
+        for (const { participantId, total } of allTotals) {
+          const totalPoints = Number(total) || 0;
+          await tx
+            .update(participants)
+            .set({
+              totalPoints,
+              updatedAt: now,
+            })
+            .where(eq(participants.id, participantId));
+        }
       }
 
       // 5. Check if all props are resolved (for auto-complete)

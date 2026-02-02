@@ -99,6 +99,8 @@ One captain, one participant, one prop, one pick → score calculated. No polish
 - [ ] View all participants
 - [ ] Mark multiple props as correct
 - [ ] View detailed leaderboard
+- [ ] Pool description
+- [ ] Update navigation
 
 ### Participant Features
 
@@ -106,6 +108,15 @@ One captain, one participant, one prop, one pick → score calculated. No polish
 - [ ] Submit picks for all props
 - [ ] View my picks
 - [ ] View leaderboard with rankings
+- [ ] TBD
+
+### Security
+
+- [ ] Migrate from URL query param secrets to HTTP-only cookies or Authorization headers
+  - Current: `?secret=xxx` leaks to browser history, server logs, referer headers
+  - Target: Secure cookie-based session or Bearer token auth
+- [ ] Add CSRF protection for all state-changing operations (POST/PATCH)
+  - Consider NextAuth.js or similar for proper session management
 
 ### Technical
 
@@ -164,6 +175,7 @@ One captain, one participant, one prop, one pick → score calculated. No polish
 - [ ] Push notifications
 - [ ] PWA support (installable)
 - [ ] Create account
+- [ ] View other people's pools
 
 ### Technical
 
@@ -194,26 +206,25 @@ Not planned, but might explore:
 
 Track key decisions as we make them:
 
-| Date        | Decision                        | Rationale                                    |
-| ----------- | ------------------------------- | -------------------------------------------- |
-| Feb 1, 2026 | Next.js App Router              | Server Components for bundle size, modern patterns |
-| Feb 1, 2026 | No accounts                     | Invite codes reduce friction                 |
-| Feb 1, 2026 | Manual score entry              | Keep it simple, captain controls everything  |
-| Feb 1, 2026 | Unique names per pool           | Avoid confusion, simple error message        |
-| Feb 1, 2026 | Auto-add captain as participant | Simplest option, captain can play            |
-| Feb 1, 2026 | Captain uses same secret for both roles | One URL to save, simpler UX |
-| Feb 1, 2026 | Invite code: A-Z, 2-9           | No ambiguous chars (0/O/1/I/L), easy to read |
-| Feb 1, 2026 | Secrets use UUID format         | Consistent with entity IDs, easy to generate |
-| Feb 1, 2026 | Vercel + Turso                  | Easiest deploy, free tier, serverless-native |
-| Feb 1, 2026 | Drizzle ORM                     | TypeScript-first, works with Turso           |
-| Feb 1, 2026 | API routes: plural RESTful      | Industry standard, future-proof              |
-| Feb 1, 2026 | Dedicated `/resolve` endpoint   | Clear intent, handles side effects explicitly |
-| Feb 1, 2026 | Duplicate picks overwrite       | Allows changing mind before lock, simpler UX |
-| Feb 1, 2026 | Pool auto-completes on resolve  | Phase 1 has one prop, simplest flow          |
-| Feb 1, 2026 | URL params only (no localStorage) | Phase 1 simplicity, captain saves their URL |
-| Feb 1, 2026 | Response format: direct + HTTP  | Simpler error handling via status codes      |
-| Feb 1, 2026 | Zod for validation              | Types + runtime validation in one definition |
-| Feb 1, 2026 | Server Components + fetch       | Phase 1 simplicity, add React Query in Phase 2 |
-| Feb 1, 2026 | TDD approach                    | Tests first, full CI from start              |
-| Feb 1, 2026 | Include all schema fields       | Future-proof, avoid migrations later         |
-
+| Date        | Decision                                | Rationale                                          |
+| ----------- | --------------------------------------- | -------------------------------------------------- |
+| Feb 1, 2026 | Next.js App Router                      | Server Components for bundle size, modern patterns |
+| Feb 1, 2026 | No accounts                             | Invite codes reduce friction                       |
+| Feb 1, 2026 | Manual score entry                      | Keep it simple, captain controls everything        |
+| Feb 1, 2026 | Unique names per pool                   | Avoid confusion, simple error message              |
+| Feb 1, 2026 | Auto-add captain as participant         | Simplest option, captain can play                  |
+| Feb 1, 2026 | Captain uses same secret for both roles | One URL to save, simpler UX                        |
+| Feb 1, 2026 | Invite code: A-Z, 2-9                   | No ambiguous chars (0/O/1/I/L), easy to read       |
+| Feb 1, 2026 | Secrets use UUID format                 | Consistent with entity IDs, easy to generate       |
+| Feb 1, 2026 | Vercel + Turso                          | Easiest deploy, free tier, serverless-native       |
+| Feb 1, 2026 | Drizzle ORM                             | TypeScript-first, works with Turso                 |
+| Feb 1, 2026 | API routes: plural RESTful              | Industry standard, future-proof                    |
+| Feb 1, 2026 | Dedicated `/resolve` endpoint           | Clear intent, handles side effects explicitly      |
+| Feb 1, 2026 | Duplicate picks overwrite               | Allows changing mind before lock, simpler UX       |
+| Feb 1, 2026 | Pool auto-completes on resolve          | Phase 1 has one prop, simplest flow                |
+| Feb 1, 2026 | URL params only (no localStorage)       | Phase 1 simplicity, captain saves their URL        |
+| Feb 1, 2026 | Response format: direct + HTTP          | Simpler error handling via status codes            |
+| Feb 1, 2026 | Zod for validation                      | Types + runtime validation in one definition       |
+| Feb 1, 2026 | Server Components + fetch               | Phase 1 simplicity, add React Query in Phase 2     |
+| Feb 1, 2026 | TDD approach                            | Tests first, full CI from start                    |
+| Feb 1, 2026 | Include all schema fields               | Future-proof, avoid migrations later               |
