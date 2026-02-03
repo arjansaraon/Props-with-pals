@@ -5,7 +5,7 @@
 ## Current Status
 
 **Phase**: MVP Core (Phase 2)
-**Focus**: Backend API complete, ready for frontend updates
+**Focus**: Frontend - cookie auth, localStorage, captain tabs, toasts, mobile
 
 ---
 
@@ -90,7 +90,7 @@ One captain, one participant, one prop, one pick → score calculated. No polish
 
 **Goal**: Run a complete prop bet pool for a single event
 
-### Captain Features
+### Backend (Complete)
 
 - [x] Edit pool details (name, description)
 - [x] Add multiple props
@@ -100,18 +100,15 @@ One captain, one participant, one prop, one pick → score calculated. No polish
 - [x] Mark multiple props as correct
 - [x] View detailed leaderboard
 - [x] Pool description field
-- [ ] Update navigation (frontend)
-
-### Participant Features
-
 - [x] View all props with point values (API ready)
 - [x] Submit picks for all props (API ready)
 - [x] View my picks (API ready)
 - [x] View leaderboard with rankings (API ready)
-- [ ] TBD clean up the UI (frontend)
-- [ ] More fun color scheme (frontend)
+- [x] Backend API routes complete (176 tests passing)
+- [x] Shared API helpers (`getPoolWithAuth`, `toPublicPool`)
+- [x] Zod validators for all mutations
 
-### Security
+### Security (Complete)
 
 - [x] Migrate from URL query param secrets to HTTP-only cookies
   - Implemented: Cookie-based auth with 30-day sliding window
@@ -119,17 +116,27 @@ One captain, one participant, one prop, one pick → score calculated. No polish
 - [x] Add CSRF protection for all state-changing operations (POST/PATCH/DELETE)
   - Implemented: Origin header validation
 
-### Technical
+### Frontend (In Progress)
 
-- [x] Backend API routes complete (176 tests passing)
-- [x] Shared API helpers (`getPoolWithAuth`, `toPublicPool`)
-- [x] Zod validators for all mutations
-- [ ] Update client components to use cookie auth (frontend)
-- [ ] Mobile-responsive UI (Tailwind) (frontend)
-- [ ] React Query for data fetching with polling (frontend)
-- [ ] localStorage for user preferences (frontend)
-- [ ] Comprehensive error handling (frontend)
-- [ ] Loading states (frontend)
+Priority items for MVP:
+
+- [ ] Remove secrets from URLs (cookie-only auth)
+  - Stop passing `?secret=` in redirects/links
+  - Cookies handle auth automatically
+- [ ] localStorage for user metadata (name, isCaptain flag)
+  - NOT for secrets (httpOnly cookies are more secure)
+  - Enables "returning user" experience
+- [ ] Captain tab toggle (Admin / My Picks)
+  - Core UX from design guide
+  - Captain can switch between managing pool and making picks
+- [ ] Toast notifications (success/error feedback)
+  - Simple component for user feedback
+  - "Picks saved!", "Invite code copied!", error messages
+- [ ] Mobile-responsive cleanup
+  - Full-width inputs/buttons on mobile
+  - Proper touch targets (44px+)
+- [ ] Loading states (simple spinners, not skeletons)
+- [ ] Basic error handling (inline messages)
 
 **Exit Criteria**: Successfully run a prop bet pool with 5+ friends
 
@@ -139,7 +146,17 @@ One captain, one participant, one prop, one pick → score calculated. No polish
 
 **Goal**: Improve based on MVP learnings
 
-### Potential Features
+### UX Improvements (Deferred from Phase 2)
+
+- [ ] React Query for data fetching
+  - Caching, automatic refetching, deduplication
+  - Polling for live updates
+- [ ] Skeleton loading states (replace spinners)
+- [ ] Confirmation modals (lock pool, mark correct, delete prop)
+- [ ] Smart routing based on localStorage
+  - `/pool/{code}` auto-redirects to captain/picks view if user has saved session
+
+### Features
 
 - [ ] Edit picks before lock
 - [ ] View other players' picks (after lock)
@@ -147,13 +164,10 @@ One captain, one participant, one prop, one pick → score calculated. No polish
 - [ ] Prop categories/sections
 - [ ] Pool settings (lock time, visibility)
 - [ ] Shareable results image
-- [ ] Better error handling
-- [ ] Loading states
 - [ ] Tiebreaker questions
 - [ ] Track payments
 - [ ] Captains can remove props or mark them as null
 - [ ] Captains can remove participants
-- [ ] Save things in 'draft' for captain
 
 ### Technical
 
@@ -239,3 +253,6 @@ Track key decisions as we make them:
 | Feb 2, 2026 | Origin header CSRF protection           | Simple, effective, no token management needed      |
 | Feb 2, 2026 | Draft status for pools                  | Captain preps pool before opening to participants  |
 | Feb 2, 2026 | Shared API helpers (`getPoolWithAuth`)  | Reduce duplication, consistent auth/error handling |
+| Feb 2, 2026 | localStorage for metadata only          | Secrets stay in httpOnly cookies; localStorage for name/isCaptain flag |
+| Feb 2, 2026 | Defer React Query to Phase 3            | Manual fetch sufficient for MVP; avoid complexity |
+| Feb 2, 2026 | Simple spinners over skeletons          | Faster to implement; skeletons deferred to Phase 3 |

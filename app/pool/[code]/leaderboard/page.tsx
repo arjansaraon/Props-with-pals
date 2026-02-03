@@ -42,7 +42,7 @@ export default async function Leaderboard({
     <div className="min-h-screen p-4">
       <main className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6 mb-6">
+        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6 mb-6">
           <div className="flex justify-between items-start mb-4">
             <div>
               <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
@@ -85,13 +85,13 @@ export default async function Leaderboard({
             <table className="w-full">
               <thead className="bg-zinc-50 dark:bg-zinc-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                     Rank
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                     Points
                   </th>
                 </tr>
@@ -106,7 +106,7 @@ export default async function Leaderboard({
                       key={participant.id}
                       className={isWinner ? 'bg-yellow-50 dark:bg-yellow-900/10' : ''}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                         <span
                           className={`text-sm font-medium ${
                             rank === 1
@@ -124,7 +124,7 @@ export default async function Leaderboard({
                           {rank}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-zinc-900 dark:text-white">
                           {participant.name}
                           {isWinner && (
@@ -134,7 +134,7 @@ export default async function Leaderboard({
                           )}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <td className="px-3 sm:px-6 py-4 text-right">
                         <span className="text-sm font-semibold text-zinc-900 dark:text-white">
                           {participant.totalPoints}
                         </span>

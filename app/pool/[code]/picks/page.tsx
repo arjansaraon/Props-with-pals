@@ -3,6 +3,7 @@ import { pools, props, picks, participants } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import Link from 'next/link';
 import { PicksClient } from './picks-client';
+import { getPoolSecret } from '@/src/lib/auth';
 
 export default async function ParticipantPicks({
   params,
@@ -12,7 +13,11 @@ export default async function ParticipantPicks({
   searchParams: Promise<{ secret?: string }>;
 }) {
   const { code } = await params;
-  const { secret } = await searchParams;
+  const { secret: querySecret } = await searchParams;
+
+  // Get secret from cookie (preferred) or query param (fallback for migration)
+  const cookieSecret = await getPoolSecret(code);
+  const secret = cookieSecret || querySecret;
 
   // Fetch pool
   const poolResult = await db
@@ -69,7 +74,7 @@ export default async function ParticipantPicks({
     <div className="min-h-screen p-4">
       <main className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6 mb-6">
+        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6 mb-6">
           <div className="flex justify-between items-start mb-4">
             <div>
               <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
@@ -118,7 +123,7 @@ export default async function ParticipantPicks({
 
         {/* Props list */}
         {propsList.length === 0 ? (
-          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6">
             <p className="text-zinc-600 dark:text-zinc-400">
               No props have been added yet. Check back later!
             </p>
@@ -126,7 +131,6 @@ export default async function ParticipantPicks({
         ) : (
           <PicksClient
             code={code}
-            secret={secret || ''}
             propsList={propsList.map((p) => ({
               id: p.id,
               questionText: p.questionText,

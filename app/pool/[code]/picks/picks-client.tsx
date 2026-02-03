@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { Spinner } from '@/app/components/spinner';
+import { useToast } from '@/app/components/toast';
 
 interface Prop {
   id: string;
@@ -12,7 +14,6 @@ interface Prop {
 
 interface PicksClientProps {
   code: string;
-  secret: string;
   propsList: Prop[];
   initialPicks: { propId: string; selectedOptionIndex: number }[];
   poolStatus: string;
@@ -20,11 +21,11 @@ interface PicksClientProps {
 
 export function PicksClient({
   code,
-  secret,
   propsList,
   initialPicks,
   poolStatus,
 }: PicksClientProps) {
+  const { showToast } = useToast();
   const [myPicks, setMyPicks] = useState<Map<string, number>>(() => {
     const map = new Map<string, number>();
     initialPicks.forEach((p) => map.set(p.propId, p.selectedOptionIndex));
@@ -40,7 +41,7 @@ export function PicksClient({
     setError('');
 
     try {
-      const response = await fetch(`/api/pools/${code}/picks?secret=${secret}`, {
+      const response = await fetch(`/api/pools/${code}/picks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ propId, selectedOptionIndex }),
@@ -54,8 +55,9 @@ export function PicksClient({
 
       // Update local state
       setMyPicks((prev) => new Map(prev).set(propId, selectedOptionIndex));
+      showToast('Pick saved!', 'success');
     } catch (err) {
-      setError('Failed to submit pick');
+      setError('Failed to submit pick. Please try again.');
     } finally {
       setSubmitting(null);
     }
@@ -76,7 +78,7 @@ export function PicksClient({
         return (
           <div
             key={prop.id}
-            className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6"
+            className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6"
           >
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-medium text-zinc-900 dark:text-white">
@@ -146,7 +148,10 @@ export function PicksClient({
             </div>
 
             {submitting === prop.id && (
-              <p className="text-sm text-zinc-500 mt-2">Saving...</p>
+              <div className="flex items-center gap-2 text-sm text-zinc-500 mt-2">
+                <Spinner size="sm" />
+                <span>Saving...</span>
+              </div>
             )}
           </div>
         );

@@ -2,6 +2,9 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import { saveUserSession } from '@/src/lib/user-session';
+import { Spinner } from '@/app/components/spinner';
+import { InlineError } from '@/app/components/inline-error';
 
 interface Pool {
   id: string;
@@ -70,8 +73,11 @@ export default function JoinPool({
         return;
       }
 
-      // Redirect to picks page with participant secret
-      router.push(`/pool/${code}/picks?secret=${data.secret}`);
+      // Save user session to localStorage (cookie auth handles the secret)
+      saveUserSession(code, { name, isCaptain: false });
+
+      // Redirect to picks page (cookie has the secret)
+      router.push(`/pool/${code}/picks`);
     } catch (err) {
       setError('Failed to join pool. Please try again.');
     } finally {
@@ -82,7 +88,7 @@ export default function JoinPool({
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+        <Spinner size="lg" className="text-blue-600" />
       </div>
     );
   }
@@ -127,7 +133,7 @@ export default function JoinPool({
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <main className="w-full max-w-md">
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8">
+        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-8">
           <h1 className="text-2xl font-bold text-center mb-2 text-zinc-900 dark:text-white">
             Join {pool.name}
           </h1>
@@ -156,21 +162,18 @@ export default function JoinPool({
                 placeholder="Enter your name"
                 required
                 maxLength={50}
-                className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
+            <InlineError message={error} onDismiss={() => setError('')} />
 
             <button
               type="submit"
               disabled={isJoining}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
+              {isJoining && <Spinner size="sm" />}
               {isJoining ? 'Joining...' : 'Join Pool'}
             </button>
           </form>

@@ -1,8 +1,9 @@
 import { db } from '@/src/lib/db';
-import { pools, props } from '@/src/lib/schema';
-import { eq } from 'drizzle-orm';
+import { pools, props, participants, picks } from '@/src/lib/schema';
+import { eq, and } from 'drizzle-orm';
 import Link from 'next/link';
-import { CaptainClient } from './captain-client';
+import { CaptainTabsClient } from './captain-tabs-client';
+import { getPoolSecret } from '@/src/lib/auth';
 
 export default async function CaptainDashboard({
   params,
@@ -12,7 +13,11 @@ export default async function CaptainDashboard({
   searchParams: Promise<{ secret?: string }>;
 }) {
   const { code } = await params;
-  const { secret } = await searchParams;
+  const { secret: querySecret } = await searchParams;
+
+  // Get secret from cookie (preferred) or query param (fallback for migration)
+  const cookieSecret = await getPoolSecret(code);
+  const secret = cookieSecret || querySecret;
 
   // Fetch pool
   const poolResult = await db
@@ -55,11 +60,31 @@ export default async function CaptainDashboard({
     .where(eq(props.poolId, pool.id))
     .orderBy(props.order);
 
+  // Fetch captain's participant record and picks (captain secret = participant secret)
+  let myPicks: { propId: string; selectedOptionIndex: number }[] = [];
+  const participantResult = await db
+    .select()
+    .from(participants)
+    .where(and(eq(participants.poolId, pool.id), eq(participants.secret, secret)))
+    .limit(1);
+
+  if (participantResult.length > 0) {
+    const picksResult = await db
+      .select()
+      .from(picks)
+      .where(eq(picks.participantId, participantResult[0].id));
+
+    myPicks = picksResult.map((p) => ({
+      propId: p.propId,
+      selectedOptionIndex: p.selectedOptionIndex,
+    }));
+  }
+
   return (
     <div className="min-h-screen p-4">
       <main className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6 mb-6">
+        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6 mb-6">
           <div className="flex justify-between items-start mb-4">
             <div>
               <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
@@ -100,26 +125,17 @@ export default async function CaptainDashboard({
             </p>
           )}
 
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href={`/pool/${code}/leaderboard`}
-              className="bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-900 dark:text-white px-4 py-2 rounded-lg text-sm font-medium"
-            >
-              View Leaderboard
-            </Link>
-            <Link
-              href={`/pool/${code}/picks?secret=${secret}`}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-            >
-              Make Picks
-            </Link>
-          </div>
+          <Link
+            href={`/pool/${code}/leaderboard`}
+            className="inline-block bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-900 dark:text-white px-4 py-3 rounded-lg text-sm font-medium"
+          >
+            View Leaderboard
+          </Link>
         </div>
 
-        {/* Client component for interactive features */}
-        <CaptainClient
+        {/* Client component with tabs for admin and picks */}
+        <CaptainTabsClient
           code={code}
-          secret={secret}
           poolStatus={pool.status}
           propsList={propsList.map((p) => ({
             id: p.id,
@@ -130,6 +146,7 @@ export default async function CaptainDashboard({
             status: p.status,
             order: p.order,
           }))}
+          initialPicks={myPicks}
         />
 
         {/* Instructions */}

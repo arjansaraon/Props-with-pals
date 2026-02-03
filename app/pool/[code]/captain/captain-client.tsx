@@ -15,14 +15,12 @@ interface Prop {
 
 interface CaptainClientProps {
   code: string;
-  secret: string;
   poolStatus: string;
   propsList: Prop[];
 }
 
 export function CaptainClient({
   code,
-  secret,
   poolStatus,
   propsList,
 }: CaptainClientProps) {
@@ -43,7 +41,7 @@ export function CaptainClient({
     setError('');
 
     try {
-      const response = await fetch(`/api/pools/${code}/props?secret=${secret}`, {
+      const response = await fetch(`/api/pools/${code}/props`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -76,7 +74,7 @@ export function CaptainClient({
     setError('');
 
     try {
-      const response = await fetch(`/api/pools/${code}?secret=${secret}`, {
+      const response = await fetch(`/api/pools/${code}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'locked' }),
@@ -102,7 +100,7 @@ export function CaptainClient({
 
     try {
       const response = await fetch(
-        `/api/pools/${code}/props/${propId}/resolve?secret=${secret}`,
+        `/api/pools/${code}/props/${propId}/resolve`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
