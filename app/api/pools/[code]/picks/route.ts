@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { pools, participants, props, picks } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { SubmitPickSchema } from '@/src/lib/validators';
+import { getSecret, requireValidOrigin } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
 
@@ -14,14 +15,13 @@ export type Database = LibSQLDatabase<typeof schema>;
  * Exported for testing with injected database.
  */
 export async function submitPickHandler(
-  request: Request,
+  request: NextRequest,
   code: string,
   database: Database
 ): Promise<Response> {
   try {
-    // Get secret from query params
-    const url = new URL(request.url);
-    const secret = url.searchParams.get('secret');
+    // Get secret from cookie (preferred) or query params (migration fallback)
+    const secret = await getSecret(code, request);
 
     if (!secret) {
       return NextResponse.json(
@@ -191,9 +191,13 @@ export async function submitPickHandler(
  * Submits a pick for a participant (requires participant secret)
  */
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ): Promise<Response> {
+  // CSRF protection
+  const csrfError = requireValidOrigin(request);
+  if (csrfError) return csrfError;
+
   const { db } = await import('@/src/lib/db');
   const { code } = await params;
   return submitPickHandler(request, code, db);

@@ -19,6 +19,7 @@ export type ParticipantStatus = (typeof participantStatusValues)[number];
 export const pools = sqliteTable('pools', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
+  description: text('description'),
   inviteCode: text('invite_code').notNull().unique(),
   buyInAmount: text('buy_in_amount'),
   captainName: text('captain_name').notNull(),

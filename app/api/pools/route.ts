@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { pools, participants } from '@/src/lib/schema';
 import { CreatePoolSchema } from '@/src/lib/validators';
 import { generateInviteCode } from '@/src/lib/invite-code';
+import { jsonResponseWithAuth, requireValidOrigin } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
 
@@ -27,7 +28,7 @@ export async function createPoolHandler(
       );
     }
 
-    const { name, captainName, buyInAmount } = parseResult.data;
+    const { name, captainName, buyInAmount, description } = parseResult.data;
 
     // Generate unique identifiers
     const poolId = crypto.randomUUID();
@@ -38,15 +39,16 @@ export async function createPoolHandler(
 
     // Create pool and captain participant in a transaction
     await database.transaction(async (tx) => {
-      // Insert pool
+      // Insert pool (starts in 'draft' status)
       await tx.insert(pools).values({
         id: poolId,
         name,
+        description: description ?? null,
         inviteCode,
         buyInAmount: buyInAmount ?? null,
         captainName,
         captainSecret,
-        status: 'open',
+        status: 'draft',
         createdAt: now,
         updatedAt: now,
       });
@@ -65,19 +67,23 @@ export async function createPoolHandler(
       });
     });
 
-    // Return created pool (with captain secret - only time it's returned)
-    return NextResponse.json(
+    // Return created pool with auth cookie set
+    // Note: captainSecret still returned in response for backward compatibility during migration
+    return jsonResponseWithAuth(
       {
         id: poolId,
         name,
+        description: description ?? null,
         inviteCode,
         captainName,
         captainSecret,
         buyInAmount: buyInAmount ?? null,
-        status: 'open',
+        status: 'draft',
         createdAt: now,
       },
-      { status: 201 }
+      inviteCode,
+      captainSecret,
+      201
     );
   } catch (error) {
     console.error('Error creating pool:', error);
@@ -101,7 +107,11 @@ export async function createPoolHandler(
  * POST /api/pools
  * Creates a new pool
  */
-export async function POST(request: Request): Promise<Response> {
+export async function POST(request: NextRequest): Promise<Response> {
+  // CSRF protection
+  const csrfError = requireValidOrigin(request);
+  if (csrfError) return csrfError;
+
   // Lazy import to avoid loading production db during tests
   const { db } = await import('@/src/lib/db');
   return createPoolHandler(request, db);

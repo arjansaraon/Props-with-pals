@@ -4,8 +4,8 @@
 
 ## Current Status
 
-**Phase**: Vertical Slice
-**Focus**: Build minimal end-to-end flow to prove the system works
+**Phase**: MVP Core (Phase 2)
+**Focus**: Backend API complete, ready for frontend updates
 
 ---
 
@@ -25,7 +25,7 @@
 
 ---
 
-## Phase 1: Vertical Slice (Current)
+## Phase 1: Vertical Slice (Complete)
 
 **Goal**: Prove the full flow works end-to-end with minimal features
 
@@ -33,99 +33,103 @@ One captain, one participant, one prop, one pick → score calculated. No polish
 
 ### Build Fully (no shortcuts - avoiding rework later)
 
-- [ ] Full database schema (all 4 tables, all fields from DATA-MODEL.md)
-- [ ] Secret-based auth (captain_secret, participant.secret)
-- [ ] Captain auto-added as participant on pool creation
-- [ ] Invite code generation (A-Z, 2-9, 6 chars)
-- [ ] Points calculation when marking correct answer
-- [ ] API route structure (`/api/pools/...` - final naming)
-- [ ] Unique participant names per pool constraint
+- [x] Full database schema (all 4 tables, all fields from DATA-MODEL.md)
+- [x] Secret-based auth (captain_secret, participant.secret)
+- [x] Captain auto-added as participant on pool creation
+- [x] Invite code generation (A-Z, 2-9, 6 chars)
+- [x] Points calculation when marking correct answer
+- [x] API route structure (`/api/pools/...` - final naming)
+- [x] Unique participant names per pool constraint
 
 ### Simplify (will enhance in Phase 2)
 
-- [ ] Pool starts in `open` status (skip `draft` for now)
-- [ ] No localStorage persistence (URL params only)
-- [ ] Manual page refresh (no polling)
-- [ ] Minimal error messages
-- [ ] Basic UI (functional, not styled)
+- [x] Pool starts in `open` status (skip `draft` for now)
+- [x] No localStorage persistence (URL params only)
+- [x] Manual page refresh (no polling)
+- [x] Minimal error messages
+- [x] Basic UI (functional, not styled)
 
 ### Captain Flow
 
-- [ ] Create pool (name + captain name, auto-generate invite code)
-- [ ] Add one prop (question, 2-10 options, point value)
-- [ ] Lock pool (open → locked)
-- [ ] Mark correct answer
-- [ ] See final scores
+- [x] Create pool (name + captain name, auto-generate invite code)
+- [x] Add one prop (question, 2-10 options, point value)
+- [x] Lock pool (open → locked)
+- [x] Mark correct answer
+- [x] See final scores
 
 ### Participant Flow
 
-- [ ] Join pool with invite code + name
-- [ ] See the prop
-- [ ] Submit pick
-- [ ] See leaderboard after results
+- [x] Join pool with invite code + name
+- [x] See the prop
+- [x] Submit pick
+- [x] See leaderboard after results
 
 ### Technical
 
-- [ ] Vitest setup and configuration
-- [ ] GitHub Actions CI (lint, typecheck, test, build)
-- [ ] Turso database setup (Drizzle ORM)
-- [ ] Database schema for Pool, Prop, Participant, Pick (all fields from DATA-MODEL.md)
-- [ ] Core API routes with tests (TDD):
-  - [ ] `POST /api/pools` - create pool
-  - [ ] `GET /api/pools/[code]` - get pool
-  - [ ] `PATCH /api/pools/[code]` - update pool status (lock)
-  - [ ] `POST /api/pools/[code]/props` - create prop
-  - [ ] `POST /api/pools/[code]/props/[id]/resolve` - mark correct answer
-  - [ ] `POST /api/pools/[code]/join` - join as participant
-  - [ ] `POST /api/pools/[code]/picks` - submit pick (overwrites existing)
-  - [ ] `GET /api/pools/[code]/leaderboard` - get ranked participants
-- [ ] Basic UI pages (create, captain view, join, participant view, leaderboard)
+- [x] Vitest setup and configuration
+- [x] GitHub Actions CI (lint, typecheck, test, build)
+- [x] Turso database setup (Drizzle ORM)
+- [x] Database schema for Pool, Prop, Participant, Pick (all fields from DATA-MODEL.md)
+- [x] Core API routes with tests (TDD):
+  - [x] `POST /api/pools` - create pool
+  - [x] `GET /api/pools/[code]` - get pool
+  - [x] `PATCH /api/pools/[code]` - update pool status (lock)
+  - [x] `POST /api/pools/[code]/props` - create prop
+  - [x] `POST /api/pools/[code]/props/[id]/resolve` - mark correct answer
+  - [x] `POST /api/pools/[code]/join` - join as participant
+  - [x] `POST /api/pools/[code]/picks` - submit pick (overwrites existing)
+  - [x] `GET /api/pools/[code]/leaderboard` - get ranked participants
+- [x] Basic UI pages (create, captain view, join, participant view, leaderboard)
 - [ ] Deploy to Vercel
 
 **Exit Criteria**: Complete one full flow manually - create pool, join, pick, score, see leaderboard. All tests passing.
 
 ---
 
-## Phase 2: MVP Core
+## Phase 2: MVP Core (Current)
 
 **Goal**: Run a complete prop bet pool for a single event
 
 ### Captain Features
 
-- [ ] Edit pool details (name, buy-in amount)
-- [ ] Add multiple props
-- [ ] Edit/delete props before lock
-- [ ] Pool status flow (draft → open → locked → completed)
-- [ ] View all participants
-- [ ] Mark multiple props as correct
-- [ ] View detailed leaderboard
-- [ ] Pool description
-- [ ] Update navigation
+- [x] Edit pool details (name, description)
+- [x] Add multiple props
+- [x] Edit/delete props before lock
+- [x] Pool status flow (draft → open → locked → completed)
+- [x] View all participants (`GET /api/pools/[code]/participants`)
+- [x] Mark multiple props as correct
+- [x] View detailed leaderboard
+- [x] Pool description field
+- [ ] Update navigation (frontend)
 
 ### Participant Features
 
-- [ ] View all props with point values
-- [ ] Submit picks for all props
-- [ ] View my picks
-- [ ] View leaderboard with rankings
-- [ ] TBD
+- [x] View all props with point values (API ready)
+- [x] Submit picks for all props (API ready)
+- [x] View my picks (API ready)
+- [x] View leaderboard with rankings (API ready)
+- [ ] TBD clean up the UI (frontend)
+- [ ] More fun color scheme (frontend)
 
 ### Security
 
-- [ ] Migrate from URL query param secrets to HTTP-only cookies or Authorization headers
-  - Current: `?secret=xxx` leaks to browser history, server logs, referer headers
-  - Target: Secure cookie-based session or Bearer token auth
-- [ ] Add CSRF protection for all state-changing operations (POST/PATCH)
-  - Consider NextAuth.js or similar for proper session management
+- [x] Migrate from URL query param secrets to HTTP-only cookies
+  - Implemented: Cookie-based auth with 30-day sliding window
+  - Backward compatible: Query params still work during migration
+- [x] Add CSRF protection for all state-changing operations (POST/PATCH/DELETE)
+  - Implemented: Origin header validation
 
 ### Technical
 
-- [ ] Remaining API routes from technical-considerations.md
-- [ ] Mobile-responsive UI (Tailwind)
-- [ ] React Query for data fetching with polling (10s interval)
-- [ ] localStorage for user persistence (secrets, preferences)
-- [ ] Comprehensive error handling
-- [ ] Loading states
+- [x] Backend API routes complete (176 tests passing)
+- [x] Shared API helpers (`getPoolWithAuth`, `toPublicPool`)
+- [x] Zod validators for all mutations
+- [ ] Update client components to use cookie auth (frontend)
+- [ ] Mobile-responsive UI (Tailwind) (frontend)
+- [ ] React Query for data fetching with polling (frontend)
+- [ ] localStorage for user preferences (frontend)
+- [ ] Comprehensive error handling (frontend)
+- [ ] Loading states (frontend)
 
 **Exit Criteria**: Successfully run a prop bet pool with 5+ friends
 
@@ -149,11 +153,14 @@ One captain, one participant, one prop, one pick → score calculated. No polish
 - [ ] Track payments
 - [ ] Captains can remove props or mark them as null
 - [ ] Captains can remove participants
+- [ ] Save things in 'draft' for captain
 
 ### Technical
 
 - [ ] E2E tests (Playwright) - critical user flows
-- [ ] Distributed rate limiting (Upstash Redis)
+- [ ] Rate limiting (Upstash Redis or similar)
+  - Priority: `/api/pools` (creation), `/api/pools/[code]/join` (joining)
+  - Prevents abuse before going public
 - [ ] Error tracking (Sentry)
 
 **Exit Criteria**: Smooth, polished experience for casual use
@@ -228,3 +235,7 @@ Track key decisions as we make them:
 | Feb 1, 2026 | Server Components + fetch               | Phase 1 simplicity, add React Query in Phase 2     |
 | Feb 1, 2026 | TDD approach                            | Tests first, full CI from start                    |
 | Feb 1, 2026 | Include all schema fields               | Future-proof, avoid migrations later               |
+| Feb 2, 2026 | HttpOnly cookies for auth               | Secrets never exposed to JS, secure by default     |
+| Feb 2, 2026 | Origin header CSRF protection           | Simple, effective, no token management needed      |
+| Feb 2, 2026 | Draft status for pools                  | Captain preps pool before opening to participants  |
+| Feb 2, 2026 | Shared API helpers (`getPoolWithAuth`)  | Reduce duplication, consistent auth/error handling |

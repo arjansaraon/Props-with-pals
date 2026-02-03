@@ -1,21 +1,25 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb } from '@/src/lib/test-db';
 import { pools, participants } from '@/src/lib/schema';
-import { getPoolHandler, lockPoolHandler, type Database } from './route';
+import { getPoolHandler, updatePoolHandler, type Database } from './route';
+import { NextRequest } from 'next/server';
 
 // Helper to create a mock GET Request
-function createGetRequest(code: string) {
-  return new Request(`http://localhost:3000/api/pools/${code}`, {
+function createGetRequest(code: string, secret?: string) {
+  const url = secret
+    ? `http://localhost:3000/api/pools/${code}?secret=${secret}`
+    : `http://localhost:3000/api/pools/${code}`;
+  return new NextRequest(url, {
     method: 'GET',
   });
 }
 
-// Helper to create a mock PATCH Request for locking pool
-function createPatchRequest(code: string, secret: string) {
-  return new Request(`http://localhost:3000/api/pools/${code}?secret=${secret}`, {
+// Helper to create a mock PATCH Request for updating pool status
+function createPatchRequest(code: string, secret: string, targetStatus = 'locked') {
+  return new NextRequest(`http://localhost:3000/api/pools/${code}?secret=${secret}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status: 'locked' }),
+    body: JSON.stringify({ status: targetStatus }),
   });
 }
 
@@ -169,7 +173,7 @@ describe('PATCH /api/pools/[code] (Lock Pool)', () => {
     it('updates status from open to locked', async () => {
       const pool = await createTestPool({ inviteCode: 'LOCK02' });
 
-      const response = await lockPoolHandler(
+      const response = await updatePoolHandler(
         createPatchRequest('LOCK02', pool.captainSecret),
         'LOCK02',
         db
@@ -183,7 +187,7 @@ describe('PATCH /api/pools/[code] (Lock Pool)', () => {
     it('returns updated pool data', async () => {
       const pool = await createTestPool({ inviteCode: 'LOCK03', name: 'Lockable Pool' });
 
-      const response = await lockPoolHandler(
+      const response = await updatePoolHandler(
         createPatchRequest('LOCK03', pool.captainSecret),
         'LOCK03',
         db
@@ -199,7 +203,7 @@ describe('PATCH /api/pools/[code] (Lock Pool)', () => {
     it('rejects wrong captain_secret (401)', async () => {
       await createTestPool({ inviteCode: 'LOCK04' });
 
-      const response = await lockPoolHandler(
+      const response = await updatePoolHandler(
         createPatchRequest('LOCK04', 'wrong-secret'),
         'LOCK04',
         db
@@ -213,13 +217,13 @@ describe('PATCH /api/pools/[code] (Lock Pool)', () => {
     it('rejects missing secret (401)', async () => {
       await createTestPool({ inviteCode: 'LOCK05' });
 
-      const request = new Request('http://localhost:3000/api/pools/LOCK05', {
+      const request = new NextRequest('http://localhost:3000/api/pools/LOCK05', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'locked' }),
       });
 
-      const response = await lockPoolHandler(request, 'LOCK05', db);
+      const response = await updatePoolHandler(request, 'LOCK05', db);
 
       expect(response.status).toBe(401);
       const data = await response.json();
@@ -229,7 +233,7 @@ describe('PATCH /api/pools/[code] (Lock Pool)', () => {
 
   describe('Error Handling', () => {
     it('rejects if pool not found (404)', async () => {
-      const response = await lockPoolHandler(
+      const response = await updatePoolHandler(
         createPatchRequest('NOTFOUND', 'any-secret'),
         'NOTFOUND',
         db
@@ -243,7 +247,7 @@ describe('PATCH /api/pools/[code] (Lock Pool)', () => {
     it('rejects if already locked (400)', async () => {
       const pool = await createTestPool({ inviteCode: 'LOCK06', status: 'locked' });
 
-      const response = await lockPoolHandler(
+      const response = await updatePoolHandler(
         createPatchRequest('LOCK06', pool.captainSecret),
         'LOCK06',
         db
@@ -257,7 +261,7 @@ describe('PATCH /api/pools/[code] (Lock Pool)', () => {
     it('rejects if completed (400)', async () => {
       const pool = await createTestPool({ inviteCode: 'LOCK07', status: 'completed' });
 
-      const response = await lockPoolHandler(
+      const response = await updatePoolHandler(
         createPatchRequest('LOCK07', pool.captainSecret),
         'LOCK07',
         db
@@ -266,6 +270,217 @@ describe('PATCH /api/pools/[code] (Lock Pool)', () => {
       expect(response.status).toBe(400);
       const data = await response.json();
       expect(data.code).toBe('POOL_LOCKED');
+    });
+  });
+});
+
+describe('PATCH /api/pools/[code] (Edit Pool Details)', () => {
+  let db: Database;
+  let cleanup: () => void;
+
+  beforeEach(async () => {
+    const setup = await setupTestDb();
+    db = setup.db as Database;
+    cleanup = setup.cleanup;
+  });
+
+  afterEach(() => {
+    cleanup?.();
+  });
+
+  // Helper to create a test pool
+  async function createTestPool(overrides: Partial<typeof pools.$inferInsert> = {}) {
+    const now = new Date().toISOString();
+    const poolData = {
+      id: crypto.randomUUID(),
+      name: 'Test Pool',
+      inviteCode: 'EDIT01',
+      captainName: 'Captain',
+      captainSecret: crypto.randomUUID(),
+      status: 'draft' as const,
+      description: null,
+      buyInAmount: null,
+      createdAt: now,
+      updatedAt: now,
+      ...overrides,
+    };
+
+    await db.insert(pools).values(poolData);
+    return poolData;
+  }
+
+  // Helper to create PATCH request for editing details
+  function createEditRequest(code: string, secret: string, body: Record<string, unknown>) {
+    return new NextRequest(`http://localhost:3000/api/pools/${code}?secret=${secret}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
+
+  describe('Edit Name', () => {
+    it('updates pool name in draft status', async () => {
+      const pool = await createTestPool({ inviteCode: 'EDIT02' });
+
+      const response = await updatePoolHandler(
+        createEditRequest('EDIT02', pool.captainSecret, { name: 'New Pool Name' }),
+        'EDIT02',
+        db
+      );
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.name).toBe('New Pool Name');
+    });
+
+    it('updates pool name in open status', async () => {
+      const pool = await createTestPool({ inviteCode: 'EDIT03', status: 'open' });
+
+      const response = await updatePoolHandler(
+        createEditRequest('EDIT03', pool.captainSecret, { name: 'Updated Name' }),
+        'EDIT03',
+        db
+      );
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.name).toBe('Updated Name');
+    });
+
+    it('rejects empty name', async () => {
+      const pool = await createTestPool({ inviteCode: 'EDIT04' });
+
+      const response = await updatePoolHandler(
+        createEditRequest('EDIT04', pool.captainSecret, { name: '' }),
+        'EDIT04',
+        db
+      );
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('rejects name over 100 characters', async () => {
+      const pool = await createTestPool({ inviteCode: 'EDIT05' });
+
+      const response = await updatePoolHandler(
+        createEditRequest('EDIT05', pool.captainSecret, { name: 'a'.repeat(101) }),
+        'EDIT05',
+        db
+      );
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe('VALIDATION_ERROR');
+    });
+  });
+
+  describe('Edit Description', () => {
+    it('updates pool description', async () => {
+      const pool = await createTestPool({ inviteCode: 'EDIT06' });
+
+      const response = await updatePoolHandler(
+        createEditRequest('EDIT06', pool.captainSecret, { description: 'A fun pool for friends!' }),
+        'EDIT06',
+        db
+      );
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.description).toBe('A fun pool for friends!');
+    });
+
+    it('can clear description by setting to null', async () => {
+      const pool = await createTestPool({ inviteCode: 'EDIT07', description: 'Existing description' });
+
+      const response = await updatePoolHandler(
+        createEditRequest('EDIT07', pool.captainSecret, { description: null }),
+        'EDIT07',
+        db
+      );
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.description).toBeNull();
+    });
+
+    it('rejects description over 500 characters', async () => {
+      const pool = await createTestPool({ inviteCode: 'EDIT08' });
+
+      const response = await updatePoolHandler(
+        createEditRequest('EDIT08', pool.captainSecret, { description: 'a'.repeat(501) }),
+        'EDIT08',
+        db
+      );
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe('VALIDATION_ERROR');
+    });
+  });
+
+  describe('Edit Multiple Fields', () => {
+    it('updates name and description together', async () => {
+      const pool = await createTestPool({ inviteCode: 'EDIT09' });
+
+      const response = await updatePoolHandler(
+        createEditRequest('EDIT09', pool.captainSecret, {
+          name: 'Super Bowl Party',
+          description: 'Join us for the big game!',
+        }),
+        'EDIT09',
+        db
+      );
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.name).toBe('Super Bowl Party');
+      expect(data.description).toBe('Join us for the big game!');
+    });
+  });
+
+  describe('Edit Restrictions', () => {
+    it('rejects editing locked pool', async () => {
+      const pool = await createTestPool({ inviteCode: 'EDIT10', status: 'locked' });
+
+      const response = await updatePoolHandler(
+        createEditRequest('EDIT10', pool.captainSecret, { name: 'New Name' }),
+        'EDIT10',
+        db
+      );
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe('POOL_LOCKED');
+    });
+
+    it('rejects editing completed pool', async () => {
+      const pool = await createTestPool({ inviteCode: 'EDIT11', status: 'completed' });
+
+      const response = await updatePoolHandler(
+        createEditRequest('EDIT11', pool.captainSecret, { name: 'New Name' }),
+        'EDIT11',
+        db
+      );
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe('POOL_LOCKED');
+    });
+
+    it('rejects non-captain editing', async () => {
+      await createTestPool({ inviteCode: 'EDIT12' });
+
+      const response = await updatePoolHandler(
+        createEditRequest('EDIT12', 'wrong-secret', { name: 'New Name' }),
+        'EDIT12',
+        db
+      );
+
+      expect(response.status).toBe(401);
+      const data = await response.json();
+      expect(data.code).toBe('UNAUTHORIZED');
     });
   });
 });

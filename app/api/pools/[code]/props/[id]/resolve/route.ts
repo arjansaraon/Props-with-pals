@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { pools, props, picks, participants } from '@/src/lib/schema';
 import { eq, and, sum, isNull, inArray } from 'drizzle-orm';
 import { ResolveSchema } from '@/src/lib/validators';
+import { getSecret, requireValidOrigin } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
 
@@ -14,15 +15,14 @@ export type Database = LibSQLDatabase<typeof schema>;
  * Exported for testing with injected database.
  */
 export async function resolvePropHandler(
-  request: Request,
+  request: NextRequest,
   code: string,
   propId: string,
   database: Database
 ): Promise<Response> {
   try {
-    // Get secret from query params
-    const url = new URL(request.url);
-    const secret = url.searchParams.get('secret');
+    // Get secret from cookie (preferred) or query params (migration fallback)
+    const secret = await getSecret(code, request);
 
     if (!secret) {
       return NextResponse.json(
@@ -56,7 +56,7 @@ export async function resolvePropHandler(
     }
 
     // Check pool status - must be 'locked' to resolve
-    if (pool.status === 'open') {
+    if (pool.status === 'draft' || pool.status === 'open') {
       return NextResponse.json(
         { code: 'POOL_NOT_LOCKED', message: 'Pool must be locked first' },
         { status: 403 }
@@ -269,9 +269,13 @@ export async function resolvePropHandler(
  * Resolves a prop by marking the correct answer (requires captain_secret)
  */
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ code: string; id: string }> }
 ): Promise<Response> {
+  // CSRF protection
+  const csrfError = requireValidOrigin(request);
+  if (csrfError) return csrfError;
+
   const { db } = await import('@/src/lib/db');
   const { code, id } = await params;
   return resolvePropHandler(request, code, id, db);

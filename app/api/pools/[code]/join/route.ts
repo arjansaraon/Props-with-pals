@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { pools, participants } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
 import { JoinPoolSchema } from '@/src/lib/validators';
+import { jsonResponseWithAuth, requireValidOrigin } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
 
@@ -32,6 +33,14 @@ export async function joinPoolHandler(
     }
 
     const pool = poolResult[0];
+
+    // Draft pools are hidden from non-captains (return 404)
+    if (pool.status === 'draft') {
+      return NextResponse.json(
+        { code: 'POOL_NOT_FOUND', message: 'Pool not found' },
+        { status: 404 }
+      );
+    }
 
     // Check pool status - must be 'open' to join
     if (pool.status !== 'open') {
@@ -71,7 +80,8 @@ export async function joinPoolHandler(
       updatedAt: now,
     });
 
-    return NextResponse.json(
+    // Return participant with auth cookie set
+    return jsonResponseWithAuth(
       {
         id: participantId,
         poolId: pool.id,
@@ -81,7 +91,9 @@ export async function joinPoolHandler(
         status: 'active',
         joinedAt: now,
       },
-      { status: 201 }
+      code,
+      participantSecret,
+      201
     );
   } catch (error) {
     // Handle unique constraint violation (duplicate name in pool)
@@ -112,9 +124,13 @@ export async function joinPoolHandler(
  * Joins a pool as a new participant
  */
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ): Promise<Response> {
+  // CSRF protection
+  const csrfError = requireValidOrigin(request);
+  if (csrfError) return csrfError;
+
   const { db } = await import('@/src/lib/db');
   const { code } = await params;
   return joinPoolHandler(request, code, db);

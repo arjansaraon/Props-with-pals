@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { pools, props } from '@/src/lib/schema';
-import { eq, and, count } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 import { CreatePropSchema } from '@/src/lib/validators';
+import { getSecret, requireValidOrigin } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
 
@@ -13,14 +14,13 @@ export type Database = LibSQLDatabase<typeof schema>;
  * Exported for testing with injected database.
  */
 export async function createPropHandler(
-  request: Request,
+  request: NextRequest,
   code: string,
   database: Database
 ): Promise<Response> {
   try {
-    // Get secret from query params
-    const url = new URL(request.url);
-    const secret = url.searchParams.get('secret');
+    // Get secret from cookie (preferred) or query params (migration fallback)
+    const secret = await getSecret(code, request);
 
     if (!secret) {
       return NextResponse.json(
@@ -53,10 +53,10 @@ export async function createPropHandler(
       );
     }
 
-    // Check pool status - must be 'open' to add props
-    if (pool.status !== 'open') {
+    // Check pool status - must be 'draft' to add props
+    if (pool.status !== 'draft') {
       return NextResponse.json(
-        { code: 'POOL_LOCKED', message: 'Cannot add props to locked or completed pool' },
+        { code: 'POOL_LOCKED', message: 'Cannot add props after pool is open' },
         { status: 403 }
       );
     }
@@ -126,12 +126,16 @@ export async function createPropHandler(
 
 /**
  * POST /api/pools/[code]/props
- * Creates a new prop for a pool (requires captain_secret)
+ * Creates a new prop for a pool (requires captain_secret, draft status only)
  */
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ): Promise<Response> {
+  // CSRF protection
+  const csrfError = requireValidOrigin(request);
+  if (csrfError) return csrfError;
+
   const { db } = await import('@/src/lib/db');
   const { code } = await params;
   return createPropHandler(request, code, db);

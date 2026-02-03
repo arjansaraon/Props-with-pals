@@ -25,6 +25,7 @@ export async function setupTestDb() {
     CREATE TABLE IF NOT EXISTS pools (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      description TEXT,
       invite_code TEXT NOT NULL UNIQUE,
       buy_in_amount TEXT,
       captain_name TEXT NOT NULL,

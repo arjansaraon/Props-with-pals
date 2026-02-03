@@ -39,7 +39,7 @@ describe('POST /api/pools', () => {
       const data = await response.json();
       expect(data.name).toBe('Super Bowl 2026');
       expect(data.captainName).toBe('John');
-      expect(data.status).toBe('open');
+      expect(data.status).toBe('draft');
     });
 
     it('returns invite code that is 6 characters', async () => {
@@ -86,6 +86,32 @@ describe('POST /api/pools', () => {
       expect(response.status).toBe(201);
       const data = await response.json();
       expect(data.buyInAmount).toBe('$20');
+    });
+
+    it('accepts optional description', async () => {
+      const response = await createPoolHandler(
+        createRequest({
+          name: 'Super Bowl 2026',
+          captainName: 'John',
+          description: 'Pick your winners for the big game!',
+        }),
+        db
+      );
+
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.description).toBe('Pick your winners for the big game!');
+    });
+
+    it('returns null description when not provided', async () => {
+      const response = await createPoolHandler(
+        createRequest({ name: 'Test Pool', captainName: 'Alice' }),
+        db
+      );
+
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.description).toBeNull();
     });
   });
 
@@ -227,6 +253,17 @@ describe('POST /api/pools', () => {
     it('rejects buyInAmount over 20 characters', async () => {
       const response = await createPoolHandler(
         createRequest({ name: 'Test Pool', captainName: 'John', buyInAmount: 'a'.repeat(21) }),
+        db
+      );
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('rejects description over 500 characters', async () => {
+      const response = await createPoolHandler(
+        createRequest({ name: 'Test Pool', captainName: 'John', description: 'a'.repeat(501) }),
         db
       );
 
