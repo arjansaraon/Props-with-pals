@@ -146,6 +146,28 @@ Priority items for MVP:
 
 **Goal**: Improve based on MVP learnings
 
+### UX Improvements
+
+General
+
+- [ ] Color scheme is too dark
+
+Participant
+
+- [ ]
+
+Captain
+
+- [ ]
+
+**Exit Criteria**: Smooth, polished experience for casual use
+
+---
+
+## Phase 4: Add features
+
+**Goal**: Improve based on MVP learnings
+
 ### UX Improvements (Deferred from Phase 2)
 
 - [ ] React Query for data fetching
@@ -159,11 +181,11 @@ Priority items for MVP:
 ### Features
 
 - [ ] Edit picks before lock
+- [ ] Pool settings (lock time, visibility)
+- [ ] Shareable results image
 - [ ] View other players' picks (after lock)
 - [ ] Easy share link (tap to copy participant's unique URL)
 - [ ] Prop categories/sections
-- [ ] Pool settings (lock time, visibility)
-- [ ] Shareable results image
 - [ ] Tiebreaker questions
 - [ ] Track payments
 - [ ] Captains can remove props or mark them as null
@@ -177,7 +199,7 @@ Priority items for MVP:
   - Prevents abuse before going public
 - [ ] Error tracking (Sentry)
 
-**Exit Criteria**: Smooth, polished experience for casual use
+**Exit Criteria**: Full fledged pool app
 
 ---
 
@@ -227,32 +249,32 @@ Not planned, but might explore:
 
 Track key decisions as we make them:
 
-| Date        | Decision                                | Rationale                                          |
-| ----------- | --------------------------------------- | -------------------------------------------------- |
-| Feb 1, 2026 | Next.js App Router                      | Server Components for bundle size, modern patterns |
-| Feb 1, 2026 | No accounts                             | Invite codes reduce friction                       |
-| Feb 1, 2026 | Manual score entry                      | Keep it simple, captain controls everything        |
-| Feb 1, 2026 | Unique names per pool                   | Avoid confusion, simple error message              |
-| Feb 1, 2026 | Auto-add captain as participant         | Simplest option, captain can play                  |
-| Feb 1, 2026 | Captain uses same secret for both roles | One URL to save, simpler UX                        |
-| Feb 1, 2026 | Invite code: A-Z, 2-9                   | No ambiguous chars (0/O/1/I/L), easy to read       |
-| Feb 1, 2026 | Secrets use UUID format                 | Consistent with entity IDs, easy to generate       |
-| Feb 1, 2026 | Vercel + Turso                          | Easiest deploy, free tier, serverless-native       |
-| Feb 1, 2026 | Drizzle ORM                             | TypeScript-first, works with Turso                 |
-| Feb 1, 2026 | API routes: plural RESTful              | Industry standard, future-proof                    |
-| Feb 1, 2026 | Dedicated `/resolve` endpoint           | Clear intent, handles side effects explicitly      |
-| Feb 1, 2026 | Duplicate picks overwrite               | Allows changing mind before lock, simpler UX       |
-| Feb 1, 2026 | Pool auto-completes on resolve          | Phase 1 has one prop, simplest flow                |
-| Feb 1, 2026 | URL params only (no localStorage)       | Phase 1 simplicity, captain saves their URL        |
-| Feb 1, 2026 | Response format: direct + HTTP          | Simpler error handling via status codes            |
-| Feb 1, 2026 | Zod for validation                      | Types + runtime validation in one definition       |
-| Feb 1, 2026 | Server Components + fetch               | Phase 1 simplicity, add React Query in Phase 2     |
-| Feb 1, 2026 | TDD approach                            | Tests first, full CI from start                    |
-| Feb 1, 2026 | Include all schema fields               | Future-proof, avoid migrations later               |
-| Feb 2, 2026 | HttpOnly cookies for auth               | Secrets never exposed to JS, secure by default     |
-| Feb 2, 2026 | Origin header CSRF protection           | Simple, effective, no token management needed      |
-| Feb 2, 2026 | Draft status for pools                  | Captain preps pool before opening to participants  |
-| Feb 2, 2026 | Shared API helpers (`getPoolWithAuth`)  | Reduce duplication, consistent auth/error handling |
+| Date        | Decision                                | Rationale                                                              |
+| ----------- | --------------------------------------- | ---------------------------------------------------------------------- |
+| Feb 1, 2026 | Next.js App Router                      | Server Components for bundle size, modern patterns                     |
+| Feb 1, 2026 | No accounts                             | Invite codes reduce friction                                           |
+| Feb 1, 2026 | Manual score entry                      | Keep it simple, captain controls everything                            |
+| Feb 1, 2026 | Unique names per pool                   | Avoid confusion, simple error message                                  |
+| Feb 1, 2026 | Auto-add captain as participant         | Simplest option, captain can play                                      |
+| Feb 1, 2026 | Captain uses same secret for both roles | One URL to save, simpler UX                                            |
+| Feb 1, 2026 | Invite code: A-Z, 2-9                   | No ambiguous chars (0/O/1/I/L), easy to read                           |
+| Feb 1, 2026 | Secrets use UUID format                 | Consistent with entity IDs, easy to generate                           |
+| Feb 1, 2026 | Vercel + Turso                          | Easiest deploy, free tier, serverless-native                           |
+| Feb 1, 2026 | Drizzle ORM                             | TypeScript-first, works with Turso                                     |
+| Feb 1, 2026 | API routes: plural RESTful              | Industry standard, future-proof                                        |
+| Feb 1, 2026 | Dedicated `/resolve` endpoint           | Clear intent, handles side effects explicitly                          |
+| Feb 1, 2026 | Duplicate picks overwrite               | Allows changing mind before lock, simpler UX                           |
+| Feb 1, 2026 | Pool auto-completes on resolve          | Phase 1 has one prop, simplest flow                                    |
+| Feb 1, 2026 | URL params only (no localStorage)       | Phase 1 simplicity, captain saves their URL                            |
+| Feb 1, 2026 | Response format: direct + HTTP          | Simpler error handling via status codes                                |
+| Feb 1, 2026 | Zod for validation                      | Types + runtime validation in one definition                           |
+| Feb 1, 2026 | Server Components + fetch               | Phase 1 simplicity, add React Query in Phase 2                         |
+| Feb 1, 2026 | TDD approach                            | Tests first, full CI from start                                        |
+| Feb 1, 2026 | Include all schema fields               | Future-proof, avoid migrations later                                   |
+| Feb 2, 2026 | HttpOnly cookies for auth               | Secrets never exposed to JS, secure by default                         |
+| Feb 2, 2026 | Origin header CSRF protection           | Simple, effective, no token management needed                          |
+| Feb 2, 2026 | Draft status for pools                  | Captain preps pool before opening to participants                      |
+| Feb 2, 2026 | Shared API helpers (`getPoolWithAuth`)  | Reduce duplication, consistent auth/error handling                     |
 | Feb 2, 2026 | localStorage for metadata only          | Secrets stay in httpOnly cookies; localStorage for name/isCaptain flag |
-| Feb 2, 2026 | Defer React Query to Phase 3            | Manual fetch sufficient for MVP; avoid complexity |
-| Feb 2, 2026 | Simple spinners over skeletons          | Faster to implement; skeletons deferred to Phase 3 |
+| Feb 2, 2026 | Defer React Query to Phase 3            | Manual fetch sufficient for MVP; avoid complexity                      |
+| Feb 2, 2026 | Simple spinners over skeletons          | Faster to implement; skeletons deferred to Phase 3                     |

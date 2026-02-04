@@ -16,6 +16,7 @@ The main container for a betting event.
 |-------|------|----------|-------------|
 | `id` | string (UUID) | Yes | Unique identifier |
 | `name` | string | Yes | Pool name (e.g., "Super Bowl 2026") |
+| `description` | string | No | Optional description of the pool |
 | `invite_code` | string(6) | Yes | Unique code for joining (A-Z, 2-9, no ambiguous chars) |
 | `buy_in_amount` | string | No | Informational (e.g., "$20") |
 | `captain_name` | string | Yes | Who created it |

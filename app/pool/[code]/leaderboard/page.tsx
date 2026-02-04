@@ -2,6 +2,18 @@ import { db } from '@/src/lib/db';
 import { pools, participants } from '@/src/lib/schema';
 import { eq, desc, asc } from 'drizzle-orm';
 import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Badge } from '@/app/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/app/components/ui/table';
+import { Alert, AlertDescription } from '@/app/components/ui/alert';
+import { Trophy } from 'lucide-react';
 
 export default async function Leaderboard({
   params,
@@ -20,7 +32,7 @@ export default async function Leaderboard({
   if (poolResult.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-red-600">Pool not found</p>
+        <p className="text-destructive">Pool not found</p>
       </div>
     );
   }
@@ -38,84 +50,66 @@ export default async function Leaderboard({
     .where(eq(participants.poolId, pool.id))
     .orderBy(desc(participants.totalPoints), asc(participants.name));
 
+  const statusVariant = pool.status === 'open' ? 'success' : pool.status === 'locked' ? 'warning' : 'info';
+
   return (
     <div className="min-h-screen p-4">
       <main className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6 mb-6">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-                {pool.name}
-              </h1>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Leaderboard
-              </p>
+        <Card className="shadow-lg mb-6">
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <CardTitle className="text-2xl">{pool.name} Leaderboard</CardTitle>
+              <Badge variant={statusVariant}>
+                {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
+              </Badge>
             </div>
-            <span
-              className={`px-3 py-1 rounded-full text-sm font-medium ${
-                pool.status === 'open'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                  : pool.status === 'locked'
-                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-              }`}
+            <Link
+              href={`/pool/${code}/picks`}
+              className="text-primary hover:text-primary/80 text-sm font-medium"
             >
-              {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
-            </span>
-          </div>
-
-          <Link
-            href={`/pool/${code}`}
-            className="text-blue-600 hover:underline text-sm"
-          >
-            ← Back to pool
-          </Link>
-        </div>
+              ← Back to my picks
+            </Link>
+          </CardHeader>
+        </Card>
 
         {/* Leaderboard */}
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg overflow-hidden">
+        <Card className="shadow-lg overflow-hidden">
           {leaderboard.length === 0 ? (
-            <div className="p-6">
-              <p className="text-zinc-600 dark:text-zinc-400 text-center">
+            <CardContent className="py-6">
+              <p className="text-muted-foreground text-center">
                 No participants yet
               </p>
-            </div>
+            </CardContent>
           ) : (
-            <table className="w-full">
-              <thead className="bg-zinc-50 dark:bg-zinc-800">
-                <tr>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                    Rank
-                  </th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                    Points
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="w-20">Rank</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="text-right">Points</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {leaderboard.map((participant, index) => {
                   const rank = index + 1;
                   const isWinner = pool.status === 'completed' && rank === 1;
 
                   return (
-                    <tr
+                    <TableRow
                       key={participant.id}
-                      className={isWinner ? 'bg-yellow-50 dark:bg-yellow-900/10' : ''}
+                      className={isWinner ? 'bg-amber-50' : ''}
                     >
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <TableCell>
                         <span
                           className={`text-sm font-medium ${
                             rank === 1
-                              ? 'text-yellow-600 dark:text-yellow-400'
+                              ? 'text-amber-500'
                               : rank === 2
-                                ? 'text-zinc-400 dark:text-zinc-500'
+                                ? 'text-slate-400'
                                 : rank === 3
-                                  ? 'text-amber-600 dark:text-amber-400'
-                                  : 'text-zinc-600 dark:text-zinc-400'
+                                  ? 'text-amber-600'
+                                  : 'text-muted-foreground'
                           }`}
                         >
                           {rank === 1 && '🥇 '}
@@ -123,38 +117,39 @@ export default async function Leaderboard({
                           {rank === 3 && '🥉 '}
                           {rank}
                         </span>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-zinc-900 dark:text-white">
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm font-medium text-foreground">
                           {participant.name}
                           {isWinner && (
-                            <span className="ml-2 text-yellow-600 dark:text-yellow-400">
+                            <span className="ml-2 text-amber-500">
                               Winner!
                             </span>
                           )}
                         </span>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 text-right">
-                        <span className="text-sm font-semibold text-zinc-900 dark:text-white">
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="text-sm font-semibold text-foreground">
                           {participant.totalPoints}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
-        </div>
+        </Card>
 
         {pool.status === 'completed' && leaderboard.length > 0 && (
-          <div className="mt-6 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
-            <p className="text-green-800 dark:text-green-400">
+          <Alert className="mt-6 border-emerald-200 bg-emerald-50">
+            <Trophy className="h-4 w-4 text-emerald-600" />
+            <AlertDescription className="text-emerald-800">
               🎉 Pool completed! Congratulations to{' '}
               <strong>{leaderboard[0].name}</strong> for winning with{' '}
               {leaderboard[0].totalPoints} points!
-            </p>
-          </div>
+            </AlertDescription>
+          </Alert>
         )}
       </main>
     </div>

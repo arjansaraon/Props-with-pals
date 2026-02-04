@@ -4,7 +4,12 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveUserSession } from '@/src/lib/user-session';
 import { Spinner } from '@/app/components/spinner';
-import { InlineError } from '@/app/components/inline-error';
+import { Button } from '@/app/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Input } from '@/app/components/ui/input';
+import { Label } from '@/app/components/ui/label';
+import { Alert, AlertDescription } from '@/app/components/ui/alert';
+import { AlertCircle, X } from 'lucide-react';
 
 interface Pool {
   id: string;
@@ -39,7 +44,7 @@ export default function JoinPool({
         }
         const data = await response.json();
         setPool(data);
-      } catch (err) {
+      } catch {
         setError('Failed to load pool');
       } finally {
         setIsLoading(false);
@@ -76,9 +81,9 @@ export default function JoinPool({
       // Save user session to localStorage (cookie auth handles the secret)
       saveUserSession(code, { name, isCaptain: false });
 
-      // Redirect to picks page (cookie has the secret)
-      router.push(`/pool/${code}/picks`);
-    } catch (err) {
+      // Redirect to joined confirmation page with secret
+      router.push(`/pool/${code}/joined?secret=${data.secret}&name=${encodeURIComponent(name)}`);
+    } catch {
       setError('Failed to join pool. Please try again.');
     } finally {
       setIsJoining(false);
@@ -88,7 +93,7 @@ export default function JoinPool({
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Spinner size="lg" className="text-blue-600" />
+        <Spinner size="lg" className="text-primary" />
       </div>
     );
   }
@@ -96,15 +101,17 @@ export default function JoinPool({
   if (!pool) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <h1 className="text-xl font-bold text-red-600 mb-2">Pool Not Found</h1>
-          <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-            The pool with code &quot;{code}&quot; does not exist.
-          </p>
-          <a href="/" className="text-blue-600 hover:underline">
-            Go back home
-          </a>
-        </div>
+        <Card className="max-w-md w-full shadow-lg">
+          <CardContent className="pt-6 text-center">
+            <h1 className="text-xl font-bold text-destructive mb-2">Pool Not Found</h1>
+            <p className="text-muted-foreground mb-4">
+              The pool with code &quot;{code}&quot; does not exist.
+            </p>
+            <a href="/" className="text-primary hover:underline">
+              Go back home
+            </a>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -112,20 +119,22 @@ export default function JoinPool({
   if (pool.status !== 'open') {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <h1 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">
-            {pool.name}
-          </h1>
-          <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-            This pool is {pool.status} and no longer accepting new participants.
-          </p>
-          <a
-            href={`/pool/${code}/leaderboard`}
-            className="text-blue-600 hover:underline"
-          >
-            View Leaderboard
-          </a>
-        </div>
+        <Card className="max-w-md w-full shadow-lg">
+          <CardContent className="pt-6 text-center">
+            <h1 className="text-xl font-bold text-foreground mb-2">
+              {pool.name}
+            </h1>
+            <p className="text-muted-foreground mb-4">
+              This pool is {pool.status} and no longer accepting new participants.
+            </p>
+            <a
+              href={`/pool/${code}/leaderboard`}
+              className="text-primary hover:underline"
+            >
+              View Leaderboard
+            </a>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -133,51 +142,58 @@ export default function JoinPool({
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <main className="w-full max-w-md">
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-8">
-          <h1 className="text-2xl font-bold text-center mb-2 text-zinc-900 dark:text-white">
-            Join {pool.name}
-          </h1>
-          <p className="text-zinc-600 dark:text-zinc-400 text-center mb-2">
-            Hosted by {pool.captainName}
-          </p>
-          {pool.buyInAmount && (
-            <p className="text-sm text-zinc-500 dark:text-zinc-500 text-center mb-6">
-              Buy-in: {pool.buyInAmount}
-            </p>
-          )}
+        <Card className="shadow-lg">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-2xl">Join {pool.name}</CardTitle>
+            <CardDescription>Hosted by {pool.captainName}</CardDescription>
+            {pool.buyInAmount && (
+              <p className="text-sm text-muted-foreground">
+                Buy-in: {pool.buyInAmount}
+              </p>
+            )}
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleJoin} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">Your Name</Label>
+                <Input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  required
+                  maxLength={50}
+                />
+              </div>
 
-          <form onSubmit={handleJoin} className="space-y-6">
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="flex items-center justify-between">
+                    {error}
+                    <button
+                      type="button"
+                      onClick={() => setError('')}
+                      className="ml-2 hover:opacity-70"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isJoining}
+                className="w-full h-12"
               >
-                Your Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-                required
-                maxLength={50}
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <InlineError message={error} onDismiss={() => setError('')} />
-
-            <button
-              type="submit"
-              disabled={isJoining}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              {isJoining && <Spinner size="sm" />}
-              {isJoining ? 'Joining...' : 'Join Pool'}
-            </button>
-          </form>
-        </div>
+                {isJoining && <Spinner size="sm" />}
+                {isJoining ? 'Joining...' : 'Join Pool'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

@@ -2,6 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Button } from '@/app/components/ui/button';
+import { Input } from '@/app/components/ui/input';
+import { Label } from '@/app/components/ui/label';
+import { Alert, AlertDescription } from '@/app/components/ui/alert';
+import { AlertCircle, Plus, Trash2, Check, Lock } from 'lucide-react';
 
 interface Prop {
   id: string;
@@ -62,7 +68,7 @@ export function CaptainClient({
       setOptions(['', '']);
       setPointValue('10');
       router.refresh();
-    } catch (err) {
+    } catch {
       setError('Failed to add prop');
     } finally {
       setIsAddingProp(false);
@@ -87,7 +93,7 @@ export function CaptainClient({
       }
 
       router.refresh();
-    } catch (err) {
+    } catch {
       setError('Failed to lock pool');
     } finally {
       setIsLocking(false);
@@ -115,7 +121,7 @@ export function CaptainClient({
       }
 
       router.refresh();
-    } catch (err) {
+    } catch {
       setError('Failed to resolve prop');
     } finally {
       setResolvingPropId(null);
@@ -143,187 +149,184 @@ export function CaptainClient({
   return (
     <>
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg mb-6">
-          {error}
-        </div>
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Lock Pool Button */}
       {poolStatus === 'open' && (
         <div className="mb-6">
-          <button
+          <Button
             onClick={handleLockPool}
             disabled={isLocking}
-            className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400 text-white px-4 py-2 rounded-lg text-sm font-medium"
+            className="bg-amber-600 hover:bg-amber-700"
           >
+            <Lock className="h-4 w-4" />
             {isLocking ? 'Locking...' : 'Lock Pool'}
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Add Prop Form (only when pool is open) */}
       {poolStatus === 'open' && (
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6 mb-6">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
-            Add New Prop
-          </h2>
-          <form onSubmit={handleAddProp} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                Question
-              </label>
-              <input
-                type="text"
-                value={questionText}
-                onChange={(e) => setQuestionText(e.target.value)}
-                placeholder="Who will score the first touchdown?"
-                required
-                className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
-              />
-            </div>
+        <Card className="shadow-lg mb-6">
+          <CardHeader>
+            <CardTitle>Add New Prop</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddProp} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Question</Label>
+                <Input
+                  type="text"
+                  value={questionText}
+                  onChange={(e) => setQuestionText(e.target.value)}
+                  placeholder="Who will score the first touchdown?"
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                Options
-              </label>
-              {options.map((option, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={option}
-                    onChange={(e) => updateOption(index, e.target.value)}
-                    placeholder={`Option ${index + 1}`}
-                    required
-                    className="flex-1 px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                  />
-                  {options.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => removeOption(index)}
-                      className="px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-              ))}
-              {options.length < 10 && (
-                <button
-                  type="button"
-                  onClick={addOption}
-                  className="text-blue-600 hover:underline text-sm"
-                >
-                  + Add Option
-                </button>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label>Options</Label>
+                {options.map((option, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={option}
+                      onChange={(e) => updateOption(index, e.target.value)}
+                      placeholder={`Option ${index + 1}`}
+                      required
+                    />
+                    {options.length > 2 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => removeOption(index)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {options.length < 10 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={addOption}
+                    className="text-primary"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Option
+                  </Button>
+                )}
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                Point Value
-              </label>
-              <input
-                type="number"
-                value={pointValue}
-                onChange={(e) => setPointValue(e.target.value)}
-                min="1"
-                required
-                className="w-32 px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label>Point Value</Label>
+                <Input
+                  type="number"
+                  value={pointValue}
+                  onChange={(e) => setPointValue(e.target.value)}
+                  min="1"
+                  required
+                  className="w-32"
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={isAddingProp}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-lg font-medium"
-            >
-              {isAddingProp ? 'Adding...' : 'Add Prop'}
-            </button>
-          </form>
-        </div>
+              <Button type="submit" disabled={isAddingProp}>
+                {isAddingProp ? 'Adding...' : 'Add Prop'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       {/* Props List */}
       {propsList.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-foreground">
             Props ({propsList.length})
           </h2>
           {propsList.map((prop) => (
-            <div
-              key={prop.id}
-              className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-medium text-zinc-900 dark:text-white">
-                  {prop.questionText}
-                </h3>
-                <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {prop.pointValue} pts
-                </span>
-              </div>
+            <Card key={prop.id} className="shadow-lg">
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg font-medium text-foreground">
+                    {prop.questionText}
+                  </h3>
+                  <span className="text-sm text-muted-foreground">
+                    {prop.pointValue} pts
+                  </span>
+                </div>
 
-              <div className="space-y-2 mb-4">
-                {prop.options.map((option, index) => {
-                  const isCorrect = prop.correctOptionIndex === index;
-                  const isResolved = prop.correctOptionIndex !== null;
+                <div className="space-y-2 mb-4">
+                  {prop.options.map((option, index) => {
+                    const isCorrect = prop.correctOptionIndex === index;
+                    const isResolved = prop.correctOptionIndex !== null;
 
-                  return (
-                    <div
-                      key={index}
-                      className={`px-4 py-2 rounded-lg border ${
-                        isCorrect
-                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                          : 'border-zinc-200 dark:border-zinc-700'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span
-                          className={
-                            isCorrect
-                              ? 'text-green-800 dark:text-green-400'
-                              : 'text-zinc-900 dark:text-white'
-                          }
-                        >
-                          {option}
-                        </span>
-                        {isCorrect && (
-                          <span className="text-green-600 dark:text-green-400 text-sm">
-                            ✓ Correct
-                          </span>
-                        )}
-                        {/* Resolve button (only for locked pool, unresolved props) */}
-                        {poolStatus === 'locked' && !isResolved && (
-                          <button
-                            onClick={() => handleResolve(prop.id, index)}
-                            disabled={resolvingPropId === prop.id}
-                            className="text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-3 py-1 rounded"
+                    return (
+                      <div
+                        key={index}
+                        className={`px-4 py-2 rounded-lg border ${
+                          isCorrect
+                            ? 'border-emerald-500 bg-emerald-50'
+                            : 'border-border'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span
+                            className={
+                              isCorrect
+                                ? 'text-emerald-800'
+                                : 'text-foreground'
+                            }
                           >
-                            {resolvingPropId === prop.id ? '...' : 'Mark Correct'}
-                          </button>
-                        )}
+                            {option}
+                          </span>
+                          {isCorrect && (
+                            <span className="text-emerald-600 text-sm flex items-center gap-1">
+                              <Check className="h-4 w-4" /> Correct
+                            </span>
+                          )}
+                          {/* Resolve button (only for locked pool, unresolved props) */}
+                          {poolStatus === 'locked' && !isResolved && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleResolve(prop.id, index)}
+                              disabled={resolvingPropId === prop.id}
+                              className="bg-emerald-600 hover:bg-emerald-700"
+                            >
+                              {resolvingPropId === prop.id ? '...' : 'Mark Correct'}
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
 
-              {prop.correctOptionIndex !== null && (
-                <p className="text-sm text-green-600 dark:text-green-400">
-                  ✓ Resolved
-                </p>
-              )}
-            </div>
+                {prop.correctOptionIndex !== null && (
+                  <p className="text-sm text-emerald-600 flex items-center gap-1">
+                    <Check className="h-4 w-4" /> Resolved
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
       {propsList.length === 0 && poolStatus === 'open' && (
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6">
-          <p className="text-zinc-600 dark:text-zinc-400 text-center">
-            No props yet. Add your first prop above!
-          </p>
-        </div>
+        <Card className="shadow-lg">
+          <CardContent className="py-6">
+            <p className="text-muted-foreground text-center">
+              No props yet. Add your first prop above!
+            </p>
+          </CardContent>
+        </Card>
       )}
     </>
   );

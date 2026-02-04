@@ -2,8 +2,15 @@ import { db } from '@/src/lib/db';
 import { pools, props, picks, participants } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { PicksClient } from './picks-client';
 import { getPoolSecret } from '@/src/lib/auth';
+import { CopyLinkButton } from '@/app/components/copy-link-button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Badge } from '@/app/components/ui/badge';
+import { Button } from '@/app/components/ui/button';
+import { Alert, AlertDescription } from '@/app/components/ui/alert';
+import { ArrowRight, AlertCircle, Lock, AlertTriangle } from 'lucide-react';
 
 export default async function ParticipantPicks({
   params,
@@ -19,6 +26,12 @@ export default async function ParticipantPicks({
   const cookieSecret = await getPoolSecret(code);
   const secret = cookieSecret || querySecret;
 
+  // Get host for building personal link
+  const headersList = await headers();
+  const host = headersList.get('host') || 'localhost:3000';
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const personalLink = secret ? `${protocol}://${host}/pool/${code}/picks?secret=${secret}` : null;
+
   // Fetch pool
   const poolResult = await db
     .select()
@@ -29,7 +42,7 @@ export default async function ParticipantPicks({
   if (poolResult.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-red-600">Pool not found</p>
+        <p className="text-destructive">Pool not found</p>
       </div>
     );
   }
@@ -70,65 +83,81 @@ export default async function ParticipantPicks({
     }
   }
 
+  const statusVariant = pool.status === 'open' ? 'success' : pool.status === 'locked' ? 'warning' : 'info';
+
   return (
     <div className="min-h-screen p-4">
       <main className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6 mb-6">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-                {pool.name}
-              </h1>
-              {participant && (
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  Playing as: {participant.name}
-                </p>
+        <Card className="shadow-lg mb-6">
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-2xl">{pool.name}</CardTitle>
+                {participant && (
+                  <p className="text-sm text-muted-foreground">
+                    Playing as: {participant.name}
+                  </p>
+                )}
+              </div>
+              <Badge variant={statusVariant}>
+                {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Your code: <span className="font-mono font-semibold text-foreground">{code}</span>
+              </p>
+              {personalLink && (
+                <CopyLinkButton url={personalLink} variant="compact" />
               )}
             </div>
-            <span
-              className={`px-3 py-1 rounded-full text-sm font-medium ${
-                pool.status === 'open'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                  : pool.status === 'locked'
-                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-              }`}
-            >
-              {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
-            </span>
-          </div>
 
-          <Link
-            href={`/pool/${code}/leaderboard`}
-            className="text-blue-600 hover:underline text-sm"
-          >
-            View Leaderboard →
-          </Link>
-        </div>
+            <Button asChild>
+              <Link href={`/pool/${code}/leaderboard`}>
+                View Leaderboard
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
 
         {pool.status !== 'open' && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 p-4 rounded-lg mb-6">
-            {pool.status === 'locked'
-              ? 'This pool is locked. Picks can no longer be changed.'
-              : 'This pool is completed. Check the leaderboard for results!'}
-          </div>
+          <Alert className="mb-6 border-amber-200 bg-amber-50">
+            {pool.status === 'locked' ? (
+              <Lock className="h-4 w-4 text-amber-600" />
+            ) : (
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+            )}
+            <AlertDescription className="text-amber-800">
+              {pool.status === 'locked'
+                ? 'This pool is locked. Picks can no longer be changed.'
+                : 'This pool is completed. Check the leaderboard for results!'}
+            </AlertDescription>
+          </Alert>
         )}
 
         {!participant && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg mb-6">
-            Invalid or missing participant secret. Please use the link you received when joining.
-          </div>
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Invalid or missing participant secret. Please use the link you received when joining.
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Props list */}
         {propsList.length === 0 ? (
-          <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6">
-            <p className="text-zinc-600 dark:text-zinc-400">
-              No props have been added yet. Check back later!
-            </p>
-          </div>
-        ) : (
+          <Card className="shadow-lg">
+            <CardContent className="py-6">
+              <p className="text-muted-foreground">
+                No props have been added yet. Check back later!
+              </p>
+            </CardContent>
+          </Card>
+        ) : participant && secret ? (
           <PicksClient
             code={code}
             propsList={propsList.map((p) => ({
@@ -140,14 +169,10 @@ export default async function ParticipantPicks({
             }))}
             initialPicks={myPicks}
             poolStatus={pool.status}
+            secret={secret}
           />
-        )}
+        ) : null}
 
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <p className="text-sm text-blue-800 dark:text-blue-400">
-            <strong>Important:</strong> Save this URL! You need it to access your picks.
-          </p>
-        </div>
       </main>
     </div>
   );

@@ -4,20 +4,58 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveUserSession } from '@/src/lib/user-session';
 import { Spinner } from '@/app/components/spinner';
-import { InlineError } from '@/app/components/inline-error';
+import { Button } from '@/app/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Input } from '@/app/components/ui/input';
+import { Label } from '@/app/components/ui/label';
+import { Alert, AlertDescription } from '@/app/components/ui/alert';
+import { AlertCircle, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
+
+  // Join pool state
+  const [inviteCode, setInviteCode] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+  const [joinError, setJoinError] = useState('');
+
+  // Create pool state
+  const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState('');
   const [captainName, setCaptainName] = useState('');
   const [buyInAmount, setBuyInAmount] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleJoinPool(e: React.FormEvent) {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    if (!inviteCode.trim()) return;
+
+    setIsJoining(true);
+    setJoinError('');
+
+    try {
+      // Validate the pool exists before navigating
+      const response = await fetch(`/api/pools/${inviteCode.toUpperCase()}`);
+
+      if (!response.ok) {
+        setJoinError('Pool not found. Check the code and try again.');
+        return;
+      }
+
+      // Navigate to the pool join page
+      router.push(`/pool/${inviteCode.toUpperCase()}`);
+    } catch {
+      setJoinError('Failed to find pool. Please try again.');
+    } finally {
+      setIsJoining(false);
+    }
+  }
+
+  async function handleCreatePool(e: React.FormEvent) {
+    e.preventDefault();
+    setIsCreating(true);
+    setCreateError('');
 
     try {
       const response = await fetch('/api/pools', {
@@ -33,7 +71,7 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || 'Failed to create pool');
+        setCreateError(data.message || 'Failed to create pool');
         return;
       }
 
@@ -42,102 +80,152 @@ export default function Home() {
 
       // Redirect to captain dashboard (cookie has the secret)
       router.push(`/pool/${data.inviteCode}/captain`);
-    } catch (err) {
-      setError('Failed to create pool. Please try again.');
+    } catch {
+      setCreateError('Failed to create pool. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsCreating(false);
     }
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <main className="w-full max-w-md">
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-8">
-          <h1 className="text-2xl font-bold text-center mb-2 text-zinc-900 dark:text-white">
-            Props With Pals
-          </h1>
-          <p className="text-zinc-600 dark:text-zinc-400 text-center mb-8">
-            Create a pool and start making prop bets with your friends
-          </p>
+      <main className="w-full max-w-md space-y-6">
+        {/* Join Pool - Primary Action */}
+        <Card className="shadow-lg">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-2xl">Props With Pals</CardTitle>
+            <CardDescription>Make prop bets with your friends</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleJoinPool} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="inviteCode">Enter Pool Code</Label>
+                <Input
+                  type="text"
+                  id="inviteCode"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  placeholder="e.g., ABC123"
+                  maxLength={6}
+                  className="text-center text-xl font-mono tracking-wider uppercase h-12"
+                />
+              </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+              {joinError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="flex items-center justify-between">
+                    {joinError}
+                    <button
+                      type="button"
+                      onClick={() => setJoinError('')}
+                      className="ml-2 hover:opacity-70"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isJoining || !inviteCode.trim()}
+                className="w-full h-12"
               >
-                Pool Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Super Bowl 2026"
-                required
-                maxLength={100}
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+                {isJoining && <Spinner size="sm" />}
+                {isJoining ? 'Finding Pool...' : 'Join Pool'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-            <div>
-              <label
-                htmlFor="captainName"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
-              >
-                Your Name (Captain)
-              </label>
-              <input
-                type="text"
-                id="captainName"
-                value={captainName}
-                onChange={(e) => setCaptainName(e.target.value)}
-                placeholder="e.g., John"
-                required
-                maxLength={50}
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+        {/* Create Pool - Secondary Action */}
+        <Card className="shadow-lg overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowCreate(!showCreate)}
+            className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-accent transition-colors"
+          >
+            <span className="font-medium text-foreground">
+              Create a New Pool
+            </span>
+            {showCreate ? (
+              <ChevronUp className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            )}
+          </button>
 
-            <div>
-              <label
-                htmlFor="buyInAmount"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
-              >
-                Buy-in Amount (Optional)
-              </label>
-              <input
-                type="text"
-                id="buyInAmount"
-                value={buyInAmount}
-                onChange={(e) => setBuyInAmount(e.target.value)}
-                placeholder="e.g., $20"
-                maxLength={20}
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+          {showCreate && (
+            <CardContent className="pt-2 border-t">
+              <form onSubmit={handleCreatePool} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Pool Name</Label>
+                  <Input
+                    type="text"
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g., Super Bowl 2026"
+                    required
+                    maxLength={100}
+                  />
+                </div>
 
-            <InlineError message={error} onDismiss={() => setError('')} />
+                <div className="space-y-2">
+                  <Label htmlFor="captainName">Your Name (Captain)</Label>
+                  <Input
+                    type="text"
+                    id="captainName"
+                    value={captainName}
+                    onChange={(e) => setCaptainName(e.target.value)}
+                    placeholder="e.g., John"
+                    required
+                    maxLength={50}
+                  />
+                </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              {isLoading && <Spinner size="sm" />}
-              {isLoading ? 'Creating...' : 'Create Pool'}
-            </button>
-          </form>
+                <div className="space-y-2">
+                  <Label htmlFor="buyInAmount">Buy-in Amount (Optional)</Label>
+                  <Input
+                    type="text"
+                    id="buyInAmount"
+                    value={buyInAmount}
+                    onChange={(e) => setBuyInAmount(e.target.value)}
+                    placeholder="e.g., $20"
+                    maxLength={20}
+                  />
+                </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Have an invite code?{' '}
-              <a href="/join" className="text-blue-600 hover:underline">
-                Join a pool
-              </a>
-            </p>
-          </div>
-        </div>
+                {createError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="flex items-center justify-between">
+                      {createError}
+                      <button
+                        type="button"
+                        onClick={() => setCreateError('')}
+                        className="ml-2 hover:opacity-70"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  disabled={isCreating}
+                  className="w-full h-12"
+                >
+                  {isCreating && <Spinner size="sm" />}
+                  {isCreating ? 'Creating...' : 'Create Pool'}
+                </Button>
+              </form>
+            </CardContent>
+          )}
+        </Card>
       </main>
     </div>
   );

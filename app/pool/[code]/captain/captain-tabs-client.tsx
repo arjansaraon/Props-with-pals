@@ -1,10 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { TabToggle } from '@/app/components/tab-toggle';
 import { Spinner } from '@/app/components/spinner';
-import { useToast } from '@/app/components/toast';
+import { useToast } from '@/app/hooks/use-toast';
+import { CopyLinkButton } from '@/app/components/copy-link-button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Button } from '@/app/components/ui/button';
+import { Input } from '@/app/components/ui/input';
+import { Label } from '@/app/components/ui/label';
+import { Alert, AlertDescription } from '@/app/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
+import { Progress } from '@/app/components/ui/progress';
+import { Badge } from '@/app/components/ui/badge';
+import { AlertCircle, Plus, Trash2, Check, X, Lock, Unlock } from 'lucide-react';
 
 interface Prop {
   id: string;
@@ -21,18 +30,24 @@ interface CaptainTabsClientProps {
   poolStatus: string;
   propsList: Prop[];
   initialPicks: { propId: string; selectedOptionIndex: number }[];
+  secret: string;
 }
 
-const TABS = [
-  { id: 'admin', label: 'Admin' },
-  { id: 'picks', label: 'My Picks' },
-];
+interface Participant {
+  id: string;
+  name: string;
+  secret: string;
+  totalPoints: number;
+  joinedAt: string;
+  isCaptain: boolean;
+}
 
 export function CaptainTabsClient({
   code,
   poolStatus,
   propsList,
   initialPicks,
+  secret,
 }: CaptainTabsClientProps) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -54,7 +69,48 @@ export function CaptainTabsClient({
     initialPicks.forEach((p) => map.set(p.propId, p.selectedOptionIndex));
     return map;
   });
-  const [submitting, setSubmitting] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState<{ propId: string; index: number } | null>(null);
+  const [pickErrorPropId, setPickErrorPropId] = useState<string | null>(null);
+
+  // Players state
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
+  const [participantsLoaded, setParticipantsLoaded] = useState(false);
+
+  // Progress tracking for picks
+  const totalProps = propsList.length;
+  const pickedCount = myPicks.size;
+  const allPicked = totalProps > 0 && pickedCount === totalProps;
+  const progressPercent = totalProps > 0 ? (pickedCount / totalProps) * 100 : 0;
+
+  // Get host for building participant links
+  const host = typeof window !== 'undefined' ? window.location.host : '';
+  const protocol = typeof window !== 'undefined' ? window.location.protocol : 'https:';
+
+  // Load participants when Players tab is selected
+  useEffect(() => {
+    if (activeTab === 'players' && !participantsLoaded) {
+      loadParticipants();
+    }
+  }, [activeTab, participantsLoaded]);
+
+  async function loadParticipants() {
+    setIsLoadingParticipants(true);
+    try {
+      const response = await fetch(`/api/pools/${code}/participants`, {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setParticipants(data.participants);
+        setParticipantsLoaded(true);
+      }
+    } catch (err) {
+      console.error('Failed to load participants:', err);
+    } finally {
+      setIsLoadingParticipants(false);
+    }
+  }
 
   // Admin handlers
   async function handleAddProp(e: React.FormEvent<HTMLFormElement>) {
@@ -191,26 +247,45 @@ export function CaptainTabsClient({
   async function handlePick(propId: string, selectedOptionIndex: number) {
     if (poolStatus !== 'open') return;
 
-    setSubmitting(propId);
-    setError('');
+    const previousPick = myPicks.get(propId);
+    setMyPicks((prev) => new Map(prev).set(propId, selectedOptionIndex));
+    setSubmitting({ propId, index: selectedOptionIndex });
+    setPickErrorPropId(null);
 
     try {
-      const response = await fetch(`/api/pools/${code}/picks`, {
+      const response = await fetch(`/api/pools/${code}/picks?secret=${encodeURIComponent(secret)}`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ propId, selectedOptionIndex }),
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        setError(data.message || 'Failed to submit pick');
+        setMyPicks((prev) => {
+          const newMap = new Map(prev);
+          if (previousPick !== undefined) {
+            newMap.set(propId, previousPick);
+          } else {
+            newMap.delete(propId);
+          }
+          return newMap;
+        });
+        setPickErrorPropId(propId);
         return;
       }
 
-      setMyPicks((prev) => new Map(prev).set(propId, selectedOptionIndex));
       showToast('Pick saved!', 'success');
     } catch {
-      setError('Failed to submit pick. Please try again.');
+      setMyPicks((prev) => {
+        const newMap = new Map(prev);
+        if (previousPick !== undefined) {
+          newMap.set(propId, previousPick);
+        } else {
+          newMap.delete(propId);
+        }
+        return newMap;
+      });
+      setPickErrorPropId(propId);
     } finally {
       setSubmitting(null);
     }
@@ -218,323 +293,369 @@ export function CaptainTabsClient({
 
   return (
     <>
-      {/* Tab Toggle */}
-      <div className="mb-6">
-        <TabToggle tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="admin">Admin</TabsTrigger>
+          <TabsTrigger value="picks">My Picks</TabsTrigger>
+          <TabsTrigger value="players">Players</TabsTrigger>
+        </TabsList>
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg mb-6">
-          {error}
-        </div>
-      )}
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {/* Admin View */}
-      {activeTab === 'admin' && (
-        <>
+        {/* Admin Tab */}
+        <TabsContent value="admin">
           {/* Pool Status Actions */}
           {poolStatus === 'draft' && (
             <div className="mb-6">
-              <button
+              <Button
                 onClick={handleOpenPool}
                 disabled={isOpening || propsList.length === 0}
-                className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2"
+                className="bg-emerald-600 hover:bg-emerald-700"
               >
                 {isOpening && <Spinner size="sm" />}
+                <Unlock className="h-4 w-4" />
                 {isOpening ? 'Opening...' : 'Open Pool for Participants'}
-              </button>
+              </Button>
               {propsList.length === 0 && (
-                <p className="text-sm text-zinc-500 mt-2">Add at least one prop before opening</p>
+                <p className="text-sm text-muted-foreground mt-2">Add at least one prop before opening</p>
               )}
             </div>
           )}
 
           {poolStatus === 'open' && (
             <div className="mb-6">
-              <button
+              <Button
                 onClick={handleLockPool}
                 disabled={isLocking}
-                className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400 text-white px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2"
+                className="bg-amber-600 hover:bg-amber-700"
               >
                 {isLocking && <Spinner size="sm" />}
+                <Lock className="h-4 w-4" />
                 {isLocking ? 'Locking...' : 'Lock Pool'}
-              </button>
+              </Button>
             </div>
           )}
 
-          {/* Add Prop Form (draft or open) */}
+          {/* Add Prop Form */}
           {(poolStatus === 'draft' || poolStatus === 'open') && (
-            <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6 mb-6">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
-                Add New Prop
-              </h2>
-              <form onSubmit={handleAddProp} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                    Question
-                  </label>
-                  <input
-                    type="text"
-                    value={questionText}
-                    onChange={(e) => setQuestionText(e.target.value)}
-                    placeholder="Who will score the first touchdown?"
-                    required
-                    className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                  />
-                </div>
+            <Card className="shadow-lg mb-6">
+              <CardHeader>
+                <CardTitle>Add New Prop</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAddProp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Question</Label>
+                    <Input
+                      type="text"
+                      value={questionText}
+                      onChange={(e) => setQuestionText(e.target.value)}
+                      placeholder="Who will score the first touchdown?"
+                      required
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                    Options
-                  </label>
-                  {options.map((option, index) => (
-                    <div key={index} className="flex gap-2 mb-2">
-                      <input
-                        type="text"
-                        value={option}
-                        onChange={(e) => updateOption(index, e.target.value)}
-                        placeholder={`Option ${index + 1}`}
-                        required
-                        className="flex-1 px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                      />
-                      {options.length > 2 && (
-                        <button
-                          type="button"
-                          onClick={() => removeOption(index)}
-                          className="px-3 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  {options.length < 10 && (
-                    <button
-                      type="button"
-                      onClick={addOption}
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      + Add Option
-                    </button>
-                  )}
-                </div>
+                  <div className="space-y-2">
+                    <Label>Options</Label>
+                    {options.map((option, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          type="text"
+                          value={option}
+                          onChange={(e) => updateOption(index, e.target.value)}
+                          placeholder={`Option ${index + 1}`}
+                          required
+                        />
+                        {options.length > 2 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => removeOption(index)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    {options.length < 10 && (
+                      <Button type="button" variant="ghost" onClick={addOption} className="text-primary">
+                        <Plus className="h-4 w-4" /> Add Option
+                      </Button>
+                    )}
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                    Point Value
-                  </label>
-                  <input
-                    type="number"
-                    value={pointValue}
-                    onChange={(e) => setPointValue(e.target.value)}
-                    min="1"
-                    required
-                    className="w-full sm:w-32 px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label>Point Value</Label>
+                    <Input
+                      type="number"
+                      value={pointValue}
+                      onChange={(e) => setPointValue(e.target.value)}
+                      min="1"
+                      required
+                      className="w-32"
+                    />
+                  </div>
 
-                <button
-                  type="submit"
-                  disabled={isAddingProp}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2"
-                >
-                  {isAddingProp && <Spinner size="sm" />}
-                  {isAddingProp ? 'Adding...' : 'Add Prop'}
-                </button>
-              </form>
-            </div>
+                  <Button type="submit" disabled={isAddingProp}>
+                    {isAddingProp && <Spinner size="sm" />}
+                    {isAddingProp ? 'Adding...' : 'Add Prop'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           )}
 
-          {/* Props List (Admin View) */}
+          {/* Props List */}
           {propsList.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-                Props ({propsList.length})
-              </h2>
+              <h2 className="text-lg font-semibold text-foreground">Props ({propsList.length})</h2>
               {propsList.map((prop) => (
-                <div
-                  key={prop.id}
-                  className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-medium text-zinc-900 dark:text-white">
-                      {prop.questionText}
-                    </h3>
-                    <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                      {prop.pointValue} pts
-                    </span>
-                  </div>
+                <Card key={prop.id} className="shadow-lg">
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-medium text-foreground">{prop.questionText}</h3>
+                      <span className="text-sm text-muted-foreground">{prop.pointValue} pts</span>
+                    </div>
 
-                  <div className="space-y-2 mb-4">
-                    {prop.options.map((option, index) => {
-                      const isCorrect = prop.correctOptionIndex === index;
-                      const isResolved = prop.correctOptionIndex !== null;
+                    <div className="space-y-2 mb-4">
+                      {prop.options.map((option, index) => {
+                        const isCorrect = prop.correctOptionIndex === index;
+                        const isResolved = prop.correctOptionIndex !== null;
 
-                      return (
-                        <div
-                          key={index}
-                          className={`px-4 py-2 rounded-lg border ${
-                            isCorrect
-                              ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                              : 'border-zinc-200 dark:border-zinc-700'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <span
-                              className={
-                                isCorrect
-                                  ? 'text-green-800 dark:text-green-400'
-                                  : 'text-zinc-900 dark:text-white'
-                              }
-                            >
-                              {option}
-                            </span>
-                            {isCorrect && (
-                              <span className="text-green-600 dark:text-green-400 text-sm">
-                                ✓ Correct
+                        return (
+                          <div
+                            key={index}
+                            className={`px-4 py-2 rounded-lg border ${
+                              isCorrect ? 'border-emerald-500 bg-emerald-50' : 'border-border'
+                            }`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className={isCorrect ? 'text-emerald-800' : 'text-foreground'}>
+                                {option}
                               </span>
-                            )}
-                            {poolStatus === 'locked' && !isResolved && (
-                              <button
-                                onClick={() => handleResolve(prop.id, index)}
-                                disabled={resolvingPropId === prop.id}
-                                className="text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-3 py-2 rounded"
-                              >
-                                {resolvingPropId === prop.id ? '...' : 'Mark Correct'}
-                              </button>
-                            )}
+                              {isCorrect && (
+                                <span className="text-emerald-600 text-sm flex items-center gap-1">
+                                  <Check className="h-4 w-4" /> Correct
+                                </span>
+                              )}
+                              {poolStatus === 'locked' && !isResolved && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleResolve(prop.id, index)}
+                                  disabled={resolvingPropId === prop.id}
+                                  className="bg-emerald-600 hover:bg-emerald-700"
+                                >
+                                  {resolvingPropId === prop.id ? '...' : 'Mark Correct'}
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
 
-                  {prop.correctOptionIndex !== null && (
-                    <p className="text-sm text-green-600 dark:text-green-400">✓ Resolved</p>
-                  )}
-                </div>
+                    {prop.correctOptionIndex !== null && (
+                      <p className="text-sm text-emerald-600 flex items-center gap-1">
+                        <Check className="h-4 w-4" /> Resolved
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
 
           {propsList.length === 0 && (
-            <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6">
-              <p className="text-zinc-600 dark:text-zinc-400 text-center">
-                No props yet. Add your first prop above!
-              </p>
-            </div>
+            <Card className="shadow-lg">
+              <CardContent className="py-6">
+                <p className="text-muted-foreground text-center">No props yet. Add your first prop above!</p>
+              </CardContent>
+            </Card>
           )}
-        </>
-      )}
+        </TabsContent>
 
-      {/* My Picks View */}
-      {activeTab === 'picks' && (
-        <div className="space-y-4">
-          {poolStatus !== 'open' && poolStatus !== 'draft' && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 p-4 rounded-lg">
-              {poolStatus === 'locked'
-                ? 'This pool is locked. Picks can no longer be changed.'
-                : 'This pool is completed. Check the leaderboard for results!'}
-            </div>
-          )}
+        {/* My Picks Tab */}
+        <TabsContent value="picks">
+          <div className="space-y-4">
+            {poolStatus !== 'open' && poolStatus !== 'draft' && (
+              <Alert className="border-amber-200 bg-amber-50">
+                <Lock className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  {poolStatus === 'locked'
+                    ? 'This pool is locked. Picks can no longer be changed.'
+                    : 'This pool is completed. Check the leaderboard for results!'}
+                </AlertDescription>
+              </Alert>
+            )}
 
-          {poolStatus === 'draft' && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400 p-4 rounded-lg">
-              Open the pool to start making picks.
-            </div>
-          )}
+            {poolStatus === 'draft' && (
+              <Alert className="border-sky-200 bg-sky-50">
+                <AlertCircle className="h-4 w-4 text-sky-600" />
+                <AlertDescription className="text-sky-800">
+                  Open the pool to start making picks.
+                </AlertDescription>
+              </Alert>
+            )}
 
-          {propsList.length === 0 ? (
-            <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-6">
-              <p className="text-zinc-600 dark:text-zinc-400 text-center">
-                No props have been added yet.
-              </p>
-            </div>
-          ) : (
-            propsList.map((prop) => {
-              const myPick = myPicks.get(prop.id);
-              const isResolved = prop.correctOptionIndex !== null;
+            {propsList.length === 0 ? (
+              <Card className="shadow-lg">
+                <CardContent className="py-6">
+                  <p className="text-muted-foreground text-center">No props have been added yet.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              propsList.map((prop) => {
+                const myPick = myPicks.get(prop.id);
+                const isResolved = prop.correctOptionIndex !== null;
+                const hasError = pickErrorPropId === prop.id;
 
-              return (
-                <div
-                  key={prop.id}
-                  className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-4 sm:p-6"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-medium text-zinc-900 dark:text-white">
-                      {prop.questionText}
-                    </h3>
-                    <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                      {prop.pointValue} pts
-                    </span>
-                  </div>
+                return (
+                  <Card key={prop.id} className={`shadow-lg ${hasError ? 'ring-2 ring-destructive' : ''}`}>
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-lg font-medium text-foreground">{prop.questionText}</h3>
+                        <span className="text-sm text-muted-foreground">{prop.pointValue} pts</span>
+                      </div>
 
-                  <div className="space-y-2">
-                    {prop.options.map((option, index) => {
-                      const isSelected = myPick === index;
-                      const isCorrect = isResolved && prop.correctOptionIndex === index;
-                      const isWrong = isResolved && isSelected && prop.correctOptionIndex !== index;
+                      {hasError && (
+                        <Alert variant="destructive" className="mb-3">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>Failed to save pick. Please try again.</AlertDescription>
+                        </Alert>
+                      )}
 
-                      return (
-                        <button
-                          key={index}
-                          onClick={() => handlePick(prop.id, index)}
-                          disabled={poolStatus !== 'open' || submitting === prop.id}
-                          className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
-                            isCorrect
-                              ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                              : isWrong
-                                ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                                : isSelected
-                                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                  : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
-                          } ${poolStatus !== 'open' ? 'cursor-default' : 'cursor-pointer'}`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span
-                              className={`${
+                      <div className="space-y-2">
+                        {prop.options.map((option, index) => {
+                          const isSelected = myPick === index;
+                          const isCorrect = isResolved && prop.correctOptionIndex === index;
+                          const isWrong = isResolved && isSelected && prop.correctOptionIndex !== index;
+                          const isSaving = submitting?.propId === prop.id && submitting?.index === index;
+
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => handlePick(prop.id, index)}
+                              disabled={poolStatus !== 'open' || submitting !== null}
+                              className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
                                 isCorrect
-                                  ? 'text-green-800 dark:text-green-400'
+                                  ? 'border-emerald-500 bg-emerald-50'
                                   : isWrong
-                                    ? 'text-red-800 dark:text-red-400'
-                                    : 'text-zinc-900 dark:text-white'
-                              }`}
+                                    ? 'border-destructive bg-red-50'
+                                    : isSelected
+                                      ? 'border-primary bg-accent'
+                                      : 'border-border hover:border-muted-foreground'
+                              } ${poolStatus !== 'open' ? 'cursor-default' : 'cursor-pointer'}`}
                             >
-                              {option}
-                            </span>
-                            {isSelected && !isResolved && (
-                              <span className="text-blue-600 dark:text-blue-400 text-sm">
-                                Your pick
-                              </span>
-                            )}
-                            {isCorrect && (
-                              <span className="text-green-600 dark:text-green-400 text-sm">
-                                ✓ Correct
-                              </span>
-                            )}
-                            {isWrong && (
-                              <span className="text-red-600 dark:text-red-400 text-sm">
-                                ✗ Wrong
-                              </span>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                              <div className="flex items-center justify-between">
+                                <span
+                                  className={
+                                    isCorrect
+                                      ? 'text-emerald-800'
+                                      : isWrong
+                                        ? 'text-destructive'
+                                        : 'text-foreground'
+                                  }
+                                >
+                                  {option}
+                                </span>
+                                {isSaving && <Spinner size="sm" />}
+                                {!isSaving && isSelected && !isResolved && (
+                                  <span className="text-primary text-sm">Your pick</span>
+                                )}
+                                {isCorrect && (
+                                  <span className="text-emerald-600 text-sm flex items-center gap-1">
+                                    <Check className="h-4 w-4" /> Correct
+                                  </span>
+                                )}
+                                {isWrong && (
+                                  <span className="text-destructive text-sm flex items-center gap-1">
+                                    <X className="h-4 w-4" /> Wrong
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
 
-                  {submitting === prop.id && (
-                    <div className="flex items-center gap-2 text-sm text-zinc-500 mt-2">
-                      <Spinner size="sm" />
-                      <span>Saving...</span>
+            {/* Progress */}
+            {poolStatus === 'open' && totalProps > 0 && (
+              <Card className={`shadow-lg ${allPicked ? 'border-emerald-500' : ''}`}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className={`font-medium ${allPicked ? 'text-emerald-600' : 'text-foreground'}`}>
+                        {allPicked ? '✓ All picks submitted!' : 'Submit Picks'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {pickedCount} of {totalProps} props answered
+                      </p>
                     </div>
+                    {allPicked && <Check className="h-6 w-6 text-emerald-600" />}
+                  </div>
+                  {!allPicked && (
+                    <Progress value={progressPercent} className="[&>div]:bg-primary" />
                   )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Players Tab */}
+        <TabsContent value="players">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle>Players ({participants.length})</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Copy a player&apos;s link to share with them if they need to access their picks.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {isLoadingParticipants ? (
+                <div className="flex justify-center py-8">
+                  <Spinner size="lg" className="text-primary" />
                 </div>
-              );
-            })
-          )}
-        </div>
-      )}
+              ) : participants.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No participants have joined yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {participants.map((participant) => {
+                    const participantLink = `${protocol}//${host}/pool/${code}/picks?secret=${participant.secret}`;
+
+                    return (
+                      <div
+                        key={participant.id}
+                        className="flex items-center justify-between p-3 border border-border rounded-lg"
+                      >
+                        <div>
+                          <span className="font-medium text-foreground">{participant.name}</span>
+                          {participant.isCaptain && (
+                            <Badge variant="default" className="ml-2">Captain</Badge>
+                          )}
+                          <p className="text-sm text-muted-foreground">{participant.totalPoints} pts</p>
+                        </div>
+                        <CopyLinkButton url={participantLink} variant="compact" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
