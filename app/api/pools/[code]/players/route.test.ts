@@ -121,7 +121,7 @@ describe('GET /api/pools/[code]/players', () => {
       expect(alice.totalPoints).toBe(50);
     });
 
-    it('returns participant secrets for captain to share links', async () => {
+    it('does not expose participant secrets (security)', async () => {
       const pool = await createTestPool({ inviteCode: 'PART04' });
 
       const response = await getPlayersHandler(
@@ -131,8 +131,8 @@ describe('GET /api/pools/[code]/players', () => {
       );
 
       const data = await response.json();
-      // Captain can see secrets to share participant links
-      expect(data.players[0].secret).toBeDefined();
+      // Secrets should never be exposed via API - even to captain
+      expect(data.players[0].secret).toBeUndefined();
     });
 
     it('returns participants sorted by name', async () => {

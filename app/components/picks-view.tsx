@@ -5,19 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Progress } from '@/app/components/ui/progress';
 import { AlertCircle, Check, X, Lock } from 'lucide-react';
-
-interface Prop {
-  id: string;
-  questionText: string;
-  options: string[];
-  pointValue: number;
-  correctOptionIndex: number | null;
-}
-
-interface SubmittingState {
-  propId: string;
-  index: number;
-}
+import type { Prop, SubmittingState } from '@/app/types/domain';
 
 interface PicksViewProps {
   poolStatus: string;
@@ -74,6 +62,7 @@ export function PicksView({
           <Progress
             value={progressPercent}
             className={allPicked ? '[&>div]:bg-emerald-500' : '[&>div]:bg-primary'}
+            aria-label={`Picks progress: ${pickedCount} of ${totalProps} completed`}
           />
         </div>
       )}
@@ -128,8 +117,8 @@ export function PicksView({
                             : isWrong
                               ? 'border-destructive bg-red-50'
                               : isSelected
-                                ? 'border-primary bg-accent'
-                                : 'border-border hover:border-muted-foreground'
+                                ? 'border-primary bg-primary/10'
+                                : 'bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/20'
                         } ${poolStatus !== 'open' ? 'cursor-default' : 'cursor-pointer'}`}
                       >
                         <div className="flex items-center justify-between">

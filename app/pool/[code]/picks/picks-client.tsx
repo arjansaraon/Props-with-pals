@@ -5,14 +5,7 @@ import { usePicks } from '@/app/hooks/use-picks';
 import { useToast } from '@/app/hooks/use-toast';
 import { PicksView } from '@/app/components/picks-view';
 import { Button } from '@/app/components/ui/button';
-
-interface Prop {
-  id: string;
-  questionText: string;
-  options: string[];
-  pointValue: number;
-  correctOptionIndex: number | null;
-}
+import type { Prop } from '@/app/types/domain';
 
 interface PicksClientProps {
   code: string;

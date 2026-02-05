@@ -58,19 +58,24 @@ export async function getPoolSecret(code: string): Promise<string | null> {
 
 /**
  * Gets the secret from cookies, with query param fallback for testing.
- * In production, cookies are the primary auth mechanism.
- * Query params are only used when cookies() is unavailable (e.g., in tests).
+ * In production, cookies are the only auth mechanism.
+ * Query params are only used in development/test environments.
  */
 export async function getSecret(code: string, request: NextRequest): Promise<string | null> {
-  // Try cookies first (preferred)
+  // Try cookies first (preferred and required in production)
   const cookieSecret = await getPoolSecret(code);
   if (cookieSecret) {
     return cookieSecret;
   }
 
-  // Fallback to query params (for tests and backwards compatibility)
-  const url = new URL(request.url);
-  return url.searchParams.get('secret');
+  // Fallback to query params ONLY in development/test (never in production)
+  // Query params in URLs can leak via logs, referrer headers, and browser history
+  if (process.env.NODE_ENV !== 'production') {
+    const url = new URL(request.url);
+    return url.searchParams.get('secret');
+  }
+
+  return null;
 }
 
 /**

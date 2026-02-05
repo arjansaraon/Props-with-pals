@@ -44,6 +44,7 @@ export async function getPlayersHandler(
     }
 
     // Fetch all participants for this pool
+    // Note: We fetch secrets internally to determine captain status, but never expose them in the response
     const playersList = await database
       .select({
         id: players.id,
@@ -57,9 +58,10 @@ export async function getPlayersHandler(
       .orderBy(players.name);
 
     // Mark the captain in the list (using timing-safe comparison)
-    const playersWithRole = playersList.map((p) => ({
+    // Strip secrets from response - never expose participant secrets via API
+    const playersWithRole = playersList.map(({ secret, ...p }) => ({
       ...p,
-      isCaptain: safeCompareSecrets(p.secret, pool.captainSecret),
+      isCaptain: safeCompareSecrets(secret, pool.captainSecret),
     }));
 
     return NextResponse.json({ players: playersWithRole }, { status: 200 });

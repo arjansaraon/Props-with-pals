@@ -11,6 +11,17 @@ import { Label } from '@/app/components/ui/label';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { AlertCircle, X, ChevronDown, ChevronUp } from 'lucide-react';
 
+// Normalize a name for use in invite code prefix (same as server)
+function normalizeNameForCode(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 export default function Home() {
   const router = useRouter();
 
@@ -24,6 +35,7 @@ export default function Home() {
   const [name, setName] = useState('');
   const [captainName, setCaptainName] = useState('');
   const [buyInAmount, setBuyInAmount] = useState('');
+  const [customCode, setCustomCode] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -34,9 +46,12 @@ export default function Home() {
     setIsJoining(true);
     setJoinError('');
 
+    // Normalize the code: trim whitespace, keep original case (could be ABC123 or john-superbowl)
+    const normalizedCode = inviteCode.trim();
+
     try {
       // Validate the pool exists before navigating
-      const response = await fetch(`/api/pools/${inviteCode.toUpperCase()}`);
+      const response = await fetch(`/api/pools/${normalizedCode}`);
 
       if (!response.ok) {
         setJoinError('Pool not found. Check the code and try again.');
@@ -44,7 +59,7 @@ export default function Home() {
       }
 
       // Navigate to the pool join page
-      router.push(`/pool/${inviteCode.toUpperCase()}`);
+      router.push(`/pool/${normalizedCode}`);
     } catch {
       setJoinError('Failed to find pool. Please try again.');
     } finally {
@@ -65,6 +80,7 @@ export default function Home() {
           name,
           captainName,
           buyInAmount: buyInAmount || undefined,
+          inviteCode: customCode || undefined,
         }),
       });
 
@@ -104,10 +120,10 @@ export default function Home() {
                   type="text"
                   id="inviteCode"
                   value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  placeholder="e.g., ABC123"
-                  maxLength={6}
-                  className="text-center text-xl font-mono tracking-wider uppercase h-12"
+                  onChange={(e) => setInviteCode(e.target.value)}
+                  placeholder="e.g., ABC123 or john-superbowl"
+                  maxLength={50}
+                  className="text-center font-mono tracking-wider h-12"
                 />
               </div>
 
@@ -195,6 +211,26 @@ export default function Home() {
                     placeholder="e.g., $20"
                     maxLength={20}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="customCode">Custom Pool Code (Optional)</Label>
+                  <Input
+                    type="text"
+                    id="customCode"
+                    value={customCode}
+                    onChange={(e) => setCustomCode(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    placeholder="e.g., superbowl-2026"
+                    maxLength={20}
+                  />
+                  {customCode && (
+                    <p className="text-xs text-muted-foreground">
+                      Your pool link: <span className="font-mono">/pool/{normalizeNameForCode(captainName)}{normalizeNameForCode(captainName) && '-'}{customCode}</span>
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Leave blank for auto-generated code. Your name will be prefixed automatically.
+                  </p>
                 </div>
 
                 {createError && (

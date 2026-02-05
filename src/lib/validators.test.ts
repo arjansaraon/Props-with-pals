@@ -5,6 +5,8 @@ import {
   JoinPoolSchema,
   SubmitPickSchema,
   ResolveSchema,
+  InviteCodeSchema,
+  RESERVED_INVITE_CODES,
 } from './validators';
 
 describe('CreatePoolSchema', () => {
@@ -228,6 +230,137 @@ describe('ResolveSchema', () => {
 
   it('rejects non-integer index', () => {
     const result = ResolveSchema.safeParse({ correctOptionIndex: 1.5 });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('InviteCodeSchema', () => {
+  it('accepts valid lowercase code', () => {
+    const result = InviteCodeSchema.safeParse('superbowl');
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts code with numbers', () => {
+    const result = InviteCodeSchema.safeParse('super2026');
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts code with hyphens', () => {
+    const result = InviteCodeSchema.safeParse('super-bowl-2026');
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts minimum length (4 chars)', () => {
+    const result = InviteCodeSchema.safeParse('test');
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts maximum length (20 chars)', () => {
+    const result = InviteCodeSchema.safeParse('a'.repeat(20));
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects code under 4 characters', () => {
+    const result = InviteCodeSchema.safeParse('abc');
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].message).toContain('4 characters');
+    }
+  });
+
+  it('rejects code over 20 characters', () => {
+    const result = InviteCodeSchema.safeParse('a'.repeat(21));
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0].message).toContain('20 characters');
+    }
+  });
+
+  it('rejects uppercase letters', () => {
+    const result = InviteCodeSchema.safeParse('SuperBowl');
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects code starting with hyphen', () => {
+    const result = InviteCodeSchema.safeParse('-superbowl');
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects code ending with hyphen', () => {
+    const result = InviteCodeSchema.safeParse('superbowl-');
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects consecutive hyphens', () => {
+    const result = InviteCodeSchema.safeParse('super--bowl');
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects special characters', () => {
+    const result = InviteCodeSchema.safeParse('super_bowl');
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects spaces', () => {
+    const result = InviteCodeSchema.safeParse('super bowl');
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects reserved words (4+ chars)', () => {
+    // Only test reserved words with 4+ chars (shorter ones fail min length first)
+    const longReservedCodes = RESERVED_INVITE_CODES.filter((code) => code.length >= 4);
+    longReservedCodes.forEach((reserved) => {
+      const result = InviteCodeSchema.safeParse(reserved);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain('reserved');
+      }
+    });
+  });
+
+  it('rejects short reserved words via length check', () => {
+    // Short reserved words like 'api', 'app', 'www' fail min length check
+    const shortReservedCodes = RESERVED_INVITE_CODES.filter((code) => code.length < 4);
+    shortReservedCodes.forEach((reserved) => {
+      const result = InviteCodeSchema.safeParse(reserved);
+      expect(result.success).toBe(false);
+    });
+  });
+});
+
+describe('CreatePoolSchema with inviteCode', () => {
+  it('accepts valid pool with custom invite code', () => {
+    const result = CreatePoolSchema.safeParse({
+      name: 'Super Bowl 2026',
+      captainName: 'John',
+      inviteCode: 'superbowl-2026',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts pool without invite code (optional)', () => {
+    const result = CreatePoolSchema.safeParse({
+      name: 'Super Bowl 2026',
+      captainName: 'John',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects pool with invalid invite code', () => {
+    const result = CreatePoolSchema.safeParse({
+      name: 'Super Bowl 2026',
+      captainName: 'John',
+      inviteCode: 'AB', // too short
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects pool with reserved invite code', () => {
+    const result = CreatePoolSchema.safeParse({
+      name: 'Super Bowl 2026',
+      captainName: 'John',
+      inviteCode: 'admin',
+    });
     expect(result.success).toBe(false);
   });
 });

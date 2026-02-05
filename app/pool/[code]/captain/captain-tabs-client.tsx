@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
 import { AlertCircle } from 'lucide-react';
 import type { CaptainTabsClientProps } from './types';
-import { usePlayers, useAddPropForm, useAdminActions } from './hooks';
+import { usePlayers, useAddPropForm, useAdminActions, useEditProp } from './hooks';
 import { AdminTab, PicksTab, PlayersTab } from './components';
 
 export function CaptainTabsClient({
@@ -24,6 +24,9 @@ export function CaptainTabsClient({
 
   // Add prop form (via hook)
   const addPropForm = useAddPropForm({ code, onError: setError });
+
+  // Edit prop (via hook)
+  const editProp = useEditProp({ code, onError: setError });
 
   // Picks state (via hook)
   const picks = usePicks({
@@ -62,6 +65,7 @@ export function CaptainTabsClient({
             propsList={propsList}
             adminActions={adminActions}
             addPropForm={addPropForm}
+            editProp={editProp}
           />
         </TabsContent>
 

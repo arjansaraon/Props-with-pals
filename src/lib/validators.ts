@@ -1,6 +1,41 @@
 import { z } from 'zod';
 
 /**
+ * Reserved invite codes that cannot be used (route conflicts, security)
+ */
+export const RESERVED_INVITE_CODES = [
+  // Routes that exist or might exist
+  'api', 'pool', 'pools', 'join', 'create', 'leaderboard',
+  'picks', 'captain', 'player', 'admin', 'settings',
+  // Auth-related (phishing prevention)
+  'login', 'logout', 'auth', 'signup', 'register', 'account',
+  // Common web conventions
+  'app', 'www', 'help', 'support', 'static', 'assets',
+];
+
+/**
+ * Schema for custom invite codes.
+ * - 4-20 characters
+ * - Lowercase letters, numbers, and hyphens only
+ * - Cannot start/end with hyphen, no consecutive hyphens
+ * - Cannot be a reserved word
+ */
+export const InviteCodeSchema = z
+  .string()
+  .min(4, 'Code must be at least 4 characters')
+  .max(20, 'Code must be at most 20 characters')
+  .regex(
+    /^[a-z0-9]+(-[a-z0-9]+)*$/,
+    'Only lowercase letters, numbers, and single hyphens (not at start/end)'
+  )
+  .refine(
+    (code) => !RESERVED_INVITE_CODES.includes(code.toLowerCase()),
+    'This code is reserved'
+  );
+
+export type InviteCodeInput = z.infer<typeof InviteCodeSchema>;
+
+/**
  * Schema for creating a new pool
  */
 export const CreatePoolSchema = z.object({
@@ -20,6 +55,7 @@ export const CreatePoolSchema = z.object({
     .string()
     .max(500, 'Description must be 500 characters or less')
     .optional(),
+  inviteCode: InviteCodeSchema.optional(),
 });
 
 export type CreatePoolInput = z.infer<typeof CreatePoolSchema>;

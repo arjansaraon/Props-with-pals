@@ -113,63 +113,15 @@ describe('CaptainTabsClient', () => {
   // ADMIN TAB TESTS
   // ===================
   describe('Admin Tab', () => {
-    describe('pool status actions', () => {
-      describe('status badge display', () => {
-        it('shows "Open" status badge when pool is open', () => {
-          render(<CaptainTabsClient {...createPropsWithStatus('open', { propsList: [createMockProp()] })} />);
-
-          expect(screen.getByText('Open')).toBeInTheDocument();
-        });
-
-        it('shows "Locked" status badge when pool is locked', () => {
-          render(<CaptainTabsClient {...createPropsWithStatus('locked', { propsList: [createMockProp()] })} />);
-
-          expect(screen.getByText('Locked')).toBeInTheDocument();
-        });
-
-        it('shows "Completed" status badge when pool is completed', () => {
-          render(<CaptainTabsClient {...createPropsWithStatus('completed', { propsList: [createMockProp()] })} />);
-
-          expect(screen.getByText('Completed')).toBeInTheDocument();
-        });
-
-        it('status badge and action button appear in the same row', () => {
-          render(<CaptainTabsClient {...createPropsWithStatus('open', { propsList: [createMockProp()] })} />);
-
-          const statusRow = screen.getByTestId('pool-status-row');
-          expect(within(statusRow).getByText('Open')).toBeInTheDocument();
-          expect(within(statusRow).getByRole('button', { name: /lock pool/i })).toBeInTheDocument();
-        });
-      });
-
-      describe('action buttons', () => {
-        it('shows "Lock Pool" button when pool status is open', () => {
-          render(<CaptainTabsClient {...createPropsWithStatus('open', { propsList: [createMockProp()] })} />);
-
-          expect(screen.getByRole('button', { name: /lock pool/i })).toBeInTheDocument();
-        });
-
-        it('shows "Complete Pool" button when pool is locked', () => {
-          render(<CaptainTabsClient {...createPropsWithStatus('locked', { propsList: [createMockProp()] })} />);
-
-          expect(screen.getByRole('button', { name: /complete pool/i })).toBeInTheDocument();
-        });
-
-        it('hides action buttons when pool is completed', () => {
-          render(<CaptainTabsClient {...createPropsWithStatus('completed', { propsList: [createMockProp()] })} />);
-
-          expect(screen.queryByRole('button', { name: /lock pool/i })).not.toBeInTheDocument();
-          expect(screen.queryByRole('button', { name: /complete pool/i })).not.toBeInTheDocument();
-        });
-      });
-    });
+    // Note: Pool status badge and action buttons (Lock Pool, Complete Pool)
+    // are now in the page header via PoolStatusAction component, not in AdminTab
 
     describe('add prop form', () => {
       describe('collapsible behavior', () => {
         it('shows "Add Prop" button when form is collapsed (default state)', () => {
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-          expect(screen.getByRole('button', { name: /^\+ add prop$/i })).toBeInTheDocument();
+          expect(screen.getByRole('button', { name: /^add prop$/i })).toBeInTheDocument();
           expect(screen.queryByPlaceholderText(/who will score/i)).not.toBeInTheDocument();
         });
 
@@ -177,7 +129,7 @@ describe('CaptainTabsClient', () => {
           const user = userEvent.setup();
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
 
           expect(screen.getByText('Add New Prop')).toBeInTheDocument();
           expect(screen.getByPlaceholderText(/who will score/i)).toBeInTheDocument();
@@ -189,7 +141,7 @@ describe('CaptainTabsClient', () => {
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
           // Open form
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
 
           // Fill and submit
           await user.type(screen.getByPlaceholderText(/who will score/i), 'Test?');
@@ -200,13 +152,13 @@ describe('CaptainTabsClient', () => {
           await waitFor(() => {
             expect(screen.queryByPlaceholderText(/who will score/i)).not.toBeInTheDocument();
           });
-          expect(screen.getByRole('button', { name: /^\+ add prop$/i })).toBeInTheDocument();
+          expect(screen.getByRole('button', { name: /^add prop$/i })).toBeInTheDocument();
         });
 
         it('hides add prop button when pool is locked', () => {
           render(<CaptainTabsClient {...createPropsWithStatus('locked')} />);
 
-          expect(screen.queryByRole('button', { name: /^\+ add prop$/i })).not.toBeInTheDocument();
+          expect(screen.queryByRole('button', { name: /^add prop$/i })).not.toBeInTheDocument();
           expect(screen.queryByText('Add New Prop')).not.toBeInTheDocument();
         });
       });
@@ -216,7 +168,7 @@ describe('CaptainTabsClient', () => {
           const user = userEvent.setup();
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
 
           expect(screen.getByPlaceholderText('Option 1')).toBeInTheDocument();
           expect(screen.getByPlaceholderText('Option 2')).toBeInTheDocument();
@@ -226,7 +178,7 @@ describe('CaptainTabsClient', () => {
           const user = userEvent.setup();
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
           await user.click(screen.getByRole('button', { name: /add option/i }));
 
           expect(screen.getByPlaceholderText('Option 3')).toBeInTheDocument();
@@ -236,7 +188,7 @@ describe('CaptainTabsClient', () => {
           const user = userEvent.setup();
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
 
           // Add a third option first
           await user.click(screen.getByRole('button', { name: /add option/i }));
@@ -253,7 +205,7 @@ describe('CaptainTabsClient', () => {
           const user = userEvent.setup();
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
 
           const pointInput = screen.getByDisplayValue('10');
           expect(pointInput).toBeInTheDocument();
@@ -267,7 +219,7 @@ describe('CaptainTabsClient', () => {
 
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
           await user.type(screen.getByPlaceholderText(/who will score/i), 'Test Question?');
           await user.type(screen.getByPlaceholderText('Option 1'), 'Option A');
           await user.type(screen.getByPlaceholderText('Option 2'), 'Option B');
@@ -295,7 +247,7 @@ describe('CaptainTabsClient', () => {
 
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
 
           const questionInput = screen.getByPlaceholderText(/who will score/i);
           await user.type(questionInput, 'Test Question?');
@@ -308,7 +260,7 @@ describe('CaptainTabsClient', () => {
             expect(screen.queryByPlaceholderText(/who will score/i)).not.toBeInTheDocument();
           });
 
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
           expect(screen.getByPlaceholderText(/who will score/i)).toHaveValue('');
         });
 
@@ -318,7 +270,7 @@ describe('CaptainTabsClient', () => {
 
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
           await user.type(screen.getByPlaceholderText(/who will score/i), 'Test Question?');
           await user.type(screen.getByPlaceholderText('Option 1'), 'Option A');
           await user.type(screen.getByPlaceholderText('Option 2'), 'Option B');
@@ -335,7 +287,7 @@ describe('CaptainTabsClient', () => {
 
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
           await user.type(screen.getByPlaceholderText(/who will score/i), 'Test');
           await user.type(screen.getByPlaceholderText('Option 1'), 'A');
           await user.type(screen.getByPlaceholderText('Option 2'), 'B');
@@ -352,7 +304,7 @@ describe('CaptainTabsClient', () => {
 
           render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
           await user.type(screen.getByPlaceholderText(/who will score/i), 'Test');
           await user.type(screen.getByPlaceholderText('Option 1'), 'A');
           await user.type(screen.getByPlaceholderText('Option 2'), 'B');
@@ -392,7 +344,7 @@ describe('CaptainTabsClient', () => {
         render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
         const warning = screen.getByText(/no props yet/i);
-        const addButton = screen.getByRole('button', { name: /^\+ add prop$/i });
+        const addButton = screen.getByRole('button', { name: /^add prop$/i });
 
         // Warning should come before button in DOM (DOCUMENT_POSITION_FOLLOWING = 4)
         expect(warning.compareDocumentPosition(addButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -435,39 +387,7 @@ describe('CaptainTabsClient', () => {
       });
     });
 
-    describe('handleLockPool', () => {
-      it('calls PATCH /api/pools/[code] with status: locked', async () => {
-        const user = userEvent.setup();
-        mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
-
-        render(<CaptainTabsClient {...createPropsWithStatus('open', { propsList: [createMockProp()] })} />);
-
-        await user.click(screen.getByRole('button', { name: /lock pool/i }));
-
-        await waitFor(() => {
-          expect(mockFetch).toHaveBeenCalledWith(
-            '/api/pools/ABC123',
-            expect.objectContaining({
-              method: 'PATCH',
-              body: JSON.stringify({ status: 'locked' }),
-            })
-          );
-        });
-      });
-
-      it('shows success toast on success', async () => {
-        const user = userEvent.setup();
-        mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
-
-        render(<CaptainTabsClient {...createPropsWithStatus('open', { propsList: [createMockProp()] })} />);
-
-        await user.click(screen.getByRole('button', { name: /lock pool/i }));
-
-        await waitFor(() => {
-          expect(mockShowToast).toHaveBeenCalledWith('Pool is now locked', 'success');
-        });
-      });
-    });
+    // Note: handleLockPool tests removed - functionality moved to PoolStatusAction component
 
     describe('handleResolve', () => {
       it('calls POST /api/pools/[code]/props/[propId]/resolve', async () => {
@@ -633,7 +553,7 @@ describe('CaptainTabsClient', () => {
         });
       });
 
-      it('shows success toast on success', async () => {
+      it('does NOT show "Pick saved!" toast on success (removed per UX spec)', async () => {
         const user = userEvent.setup();
         mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
 
@@ -650,9 +570,13 @@ describe('CaptainTabsClient', () => {
         const optionButton = screen.getByRole('button', { name: /team a/i });
         await user.click(optionButton);
 
+        // Wait for the pick to be processed
         await waitFor(() => {
-          expect(mockShowToast).toHaveBeenCalledWith('Pick saved!', 'success');
+          expect(mockFetch).toHaveBeenCalled();
         });
+
+        // "Pick saved!" toast should NOT appear (UX improvement)
+        expect(mockShowToast).not.toHaveBeenCalledWith('Pick saved!', 'success');
       });
 
       it('optimistically updates UI before API response', async () => {

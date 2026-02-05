@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { pools, players } from '@/src/lib/schema';
-import { eq, desc, asc } from 'drizzle-orm';
+import { pools, players, props } from '@/src/lib/schema';
+import { eq, desc, asc, isNotNull, and } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
 
@@ -34,20 +34,34 @@ export async function getLeaderboardHandler(
     const pool = poolResult[0];
 
     // Get all participants for this pool, ordered by points DESC, name ASC
+    // Include secret to determine if player is captain
     const participantList = await database
       .select({
         id: players.id,
         name: players.name,
         totalPoints: players.totalPoints,
+        secret: players.secret,
       })
       .from(players)
       .where(eq(players.poolId, pool.id))
       .orderBy(desc(players.totalPoints), asc(players.name));
 
-    // Add rank to each participant
+    // Check if any props have been resolved
+    const resolvedPropsResult = await database
+      .select({ id: props.id })
+      .from(props)
+      .where(and(eq(props.poolId, pool.id), isNotNull(props.correctOptionIndex)))
+      .limit(1);
+
+    const hasResolvedProps = resolvedPropsResult.length > 0;
+
+    // Add rank and isCaptain to each participant (don't expose secret)
     const leaderboard = participantList.map((p, index) => ({
-      ...p,
+      id: p.id,
+      name: p.name,
+      totalPoints: p.totalPoints,
       rank: index + 1,
+      isCaptain: p.secret === pool.captainSecret,
     }));
 
     return NextResponse.json(
@@ -55,6 +69,7 @@ export async function getLeaderboardHandler(
         poolId: pool.id,
         poolName: pool.name,
         poolStatus: pool.status,
+        hasResolvedProps,
         leaderboard,
       },
       { status: 200 }

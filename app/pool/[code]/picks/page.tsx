@@ -1,28 +1,25 @@
 import { db } from "@/src/lib/db";
 import { pools, props, picks, players } from "@/src/lib/schema";
 import { eq, and } from "drizzle-orm";
-import Link from "next/link";
 import { headers } from "next/headers";
 import { PicksClient } from "./picks-client";
 import { getPoolSecret } from "@/src/lib/auth";
 import { CopyLinkButton } from "@/app/components/copy-link-button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/app/components/ui/card";
-import { Badge } from "@/app/components/ui/badge";
-import { Button } from "@/app/components/ui/button";
+import { Card, CardContent } from "@/app/components/ui/card";
 import { Alert, AlertDescription } from "@/app/components/ui/alert";
-import { ArrowRight, AlertCircle, Lock, AlertTriangle } from "lucide-react";
+import { PoolHeader } from "@/app/components/pool-header";
+import { AlertCircle, Lock, AlertTriangle, CheckCircle } from "lucide-react";
 
 export default async function PlayerPicks({
   params,
+  searchParams,
 }: {
   params: Promise<{ code: string }>;
+  searchParams: Promise<{ welcome?: string }>;
 }) {
   const { code } = await params;
+  const { welcome } = await searchParams;
+  const isNewJoin = welcome === "true";
 
   // Get secret from cookie (secure, httpOnly - no URL fallback)
   const secret = await getPoolSecret(code);
@@ -86,52 +83,31 @@ export default async function PlayerPicks({
     }
   }
 
-  const statusVariant =
-    pool.status === "open"
-      ? "success"
-      : pool.status === "locked"
-        ? "warning"
-        : "info";
-
   return (
     <div className="min-h-screen p-4">
       <main className="max-w-2xl mx-auto">
         {/* Header */}
-        <Card className="shadow-lg mb-6">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-2xl">{pool.name}</CardTitle>
-                {participant && (
-                  <p className="text-sm text-muted-foreground">
-                    Playing as: {participant.name}
-                  </p>
-                )}
-              </div>
-              <Badge variant={statusVariant}>
-                {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3 mb-4">
-              <p className="text-sm text-muted-foreground">
-                Pool code:{" "}
-                <span className="font-mono font-semibold text-foreground">
-                  {code}
-                </span>
-              </p>
-              {poolLink && <CopyLinkButton url={poolLink} variant="compact" />}
-            </div>
-
-            <Button asChild>
-              <Link href={`/pool/${code}/leaderboard`}>
-                View Leaderboard
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        {participant && (
+          <PoolHeader
+            poolName={pool.name}
+            poolCode={code}
+            poolStatus={pool.status as 'open' | 'locked' | 'completed'}
+            inviteCode={pool.inviteCode}
+            captainName={pool.captainName}
+            buyInAmount={pool.buyInAmount}
+            createdAt={pool.createdAt}
+            currentUserName={participant.name}
+            myLinkUrl={poolLink}
+            shareLinkUrl={`${protocol}://${host}/pool/${code}`}
+            tooltipTitle="How to Play"
+            tooltipInstructions={[
+              'Pick your answers for each prop',
+              'Your picks auto-save when selected',
+              'You can change picks until the pool locks',
+              'Check the leaderboard to see standings',
+            ]}
+          />
+        )}
 
         {pool.status !== "open" && (
           <Alert className="mb-6 border-amber-200 bg-amber-50">
@@ -154,6 +130,16 @@ export default async function PlayerPicks({
             <AlertDescription>
               Invalid or missing participant secret. Please use the link you
               received when joining.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isNewJoin && participant && (
+          <Alert className="mb-6 border-emerald-200 bg-emerald-50">
+            <CheckCircle className="h-4 w-4 text-emerald-600" />
+            <AlertDescription className="text-emerald-800 flex items-center gap-2 flex-wrap">
+              You&apos;re in! Save your link to return later:
+              <CopyLinkButton url={poolLink} label="Copy my link" />
             </AlertDescription>
           </Alert>
         )}

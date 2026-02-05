@@ -8,16 +8,7 @@ import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { AlertCircle, Plus, Trash2, Check, Lock } from 'lucide-react';
-
-interface Prop {
-  id: string;
-  questionText: string;
-  options: string[];
-  pointValue: number;
-  correctOptionIndex: number | null;
-  status: string;
-  order: number;
-}
+import type { Prop } from '@/app/types/domain';
 
 interface CaptainClientProps {
   code: string;

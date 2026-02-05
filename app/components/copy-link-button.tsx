@@ -8,10 +8,11 @@ import { useToast } from '@/app/hooks/use-toast';
 interface CopyLinkButtonProps {
   url: string;
   className?: string;
-  variant?: 'default' | 'compact';
+  variant?: 'default' | 'compact' | 'outline';
+  label?: string;
 }
 
-export function CopyLinkButton({ url, className = '', variant = 'default' }: CopyLinkButtonProps) {
+export function CopyLinkButton({ url, className = '', variant = 'default', label }: CopyLinkButtonProps) {
   const [copied, setCopied] = useState(false);
   const { showToast } = useToast();
 
@@ -40,16 +41,22 @@ export function CopyLinkButton({ url, className = '', variant = 'default' }: Cop
       <button
         onClick={handleCopy}
         className={`text-primary hover:text-primary/80 text-sm font-medium ${className}`}
+        aria-live="polite"
       >
         {copied ? '✓ Copied!' : 'Copy link'}
       </button>
     );
   }
 
+  const buttonVariant = variant === 'outline' ? 'outline' : 'default';
+  const displayLabel = label || 'Copy Link';
+
   return (
     <Button
       onClick={handleCopy}
+      variant={buttonVariant}
       className={className}
+      aria-live="polite"
     >
       {copied ? (
         <>
@@ -59,7 +66,7 @@ export function CopyLinkButton({ url, className = '', variant = 'default' }: Cop
       ) : (
         <>
           <Copy className="h-5 w-5" />
-          Copy Link
+          {displayLabel}
         </>
       )}
     </Button>
