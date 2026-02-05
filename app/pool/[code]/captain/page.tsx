@@ -5,13 +5,8 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { CaptainTabsClient } from './captain-tabs-client';
 import { getPoolSecret } from '@/src/lib/auth';
-import { CopyLinkButton } from '@/app/components/copy-link-button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { Badge } from '@/app/components/ui/badge';
-import { Button } from '@/app/components/ui/button';
-import { Alert, AlertDescription } from '@/app/components/ui/alert';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/app/components/ui/tooltip';
-import { AlertTriangle, HelpCircle } from 'lucide-react';
+import { Card, CardContent } from '@/app/components/ui/card';
+import { PoolHeader } from '@/app/components/pool-header';
 
 export default async function CaptainDashboard({
   params,
@@ -95,80 +90,29 @@ export default async function CaptainDashboard({
     }));
   }
 
-  const statusVariant = pool.status === 'open' ? 'success' : pool.status === 'locked' ? 'warning' : 'info';
-
   return (
     <div className="min-h-screen p-4">
       <main className="max-w-2xl mx-auto">
         {/* Header */}
-        <Card className="shadow-lg mb-6">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <CardTitle className="text-2xl">{pool.name}</CardTitle>
-              <Badge variant={statusVariant}>
-                {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
-              </Badge>
-            </div>
-            {/* Inline Details Row */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mt-2">
-              <span>
-                Captain: <strong className="text-foreground">{pool.captainName}</strong>
-              </span>
-              {pool.buyInAmount && (
-                <>
-                  <span className="text-muted-foreground/50">•</span>
-                  <span>
-                    Buy-in: <strong className="text-foreground">{pool.buyInAmount}</strong>
-                  </span>
-                </>
-              )}
-              <span className="text-muted-foreground/50">•</span>
-              <span>Created: {new Date(pool.createdAt).toLocaleDateString()}</span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-muted rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-sm text-muted-foreground">
-                  Invite Code
-                </p>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button className="text-muted-foreground hover:text-foreground transition-colors">
-                        <HelpCircle className="h-4 w-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs p-3">
-                      <p className="font-medium mb-2">Captain Instructions</p>
-                      <ol className="list-decimal list-inside space-y-1 text-sm">
-                        <li>Share the invite code with friends</li>
-                        <li>Add props while the pool is open</li>
-                        <li>Lock the pool when ready</li>
-                        <li>Mark correct answers after the event</li>
-                      </ol>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <p className="text-2xl font-mono font-bold text-foreground">
-                {pool.inviteCode}
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Share this code with friends to join
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <CopyLinkButton url={`${protocol}://${host}/pool/${code}/captain?secret=${secret}`} />
-              <Button variant="secondary" asChild>
-                <Link href={`/pool/${code}/leaderboard`}>
-                  View Leaderboard
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <PoolHeader
+          poolName={pool.name}
+          poolCode={code}
+          poolStatus={pool.status as 'open' | 'locked' | 'completed'}
+          inviteCode={pool.inviteCode}
+          captainName={pool.captainName}
+          buyInAmount={pool.buyInAmount}
+          createdAt={pool.createdAt}
+          currentUserName={pool.captainName}
+          myLinkUrl={`${protocol}://${host}/pool/${code}/captain?secret=${secret}`}
+          shareLinkUrl={`${protocol}://${host}/pool/${code}`}
+          tooltipTitle="Share instructions"
+          tooltipInstructions={[
+            'Share the invite code or pool link with friends',
+            'They can join using the code on the homepage',
+            'Once joined, they\'ll get their own private link',
+          ]}
+          isCaptain
+        />
 
         {/* Client component with tabs for admin and picks */}
         <CaptainTabsClient
@@ -186,14 +130,6 @@ export default async function CaptainDashboard({
           initialPicks={myPicks}
           secret={secret}
         />
-
-        {/* Save URL Reminder */}
-        <Alert className="mt-6 border-amber-200 bg-amber-50">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-800">
-            <strong>Important:</strong> Save this URL! You need it to manage your pool.
-          </AlertDescription>
-        </Alert>
       </main>
     </div>
   );
