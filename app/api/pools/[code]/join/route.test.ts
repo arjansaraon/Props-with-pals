@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb } from '@/src/lib/test-db';
-import { pools, participants } from '@/src/lib/schema';
+import { pools, players } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
 import { joinPoolHandler, type Database } from './route';
 
@@ -46,7 +46,7 @@ describe('POST /api/pools/[code]/join', () => {
     await db.insert(pools).values(poolData);
 
     // Also create captain as participant
-    await db.insert(participants).values({
+    await db.insert(players).values({
       id: crypto.randomUUID(),
       poolId: poolData.id,
       name: poolData.captainName,
@@ -92,8 +92,8 @@ describe('POST /api/pools/[code]/join', () => {
       // Verify secret is stored in database as valid UUID
       const participantList = await db
         .select()
-        .from(participants)
-        .where(eq(participants.id, data.id));
+        .from(players)
+        .where(eq(players.id, data.id));
       expect(participantList[0].secret).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
       );
@@ -138,8 +138,8 @@ describe('POST /api/pools/[code]/join', () => {
 
       const participantList = await db
         .select()
-        .from(participants)
-        .where(eq(participants.id, data.id));
+        .from(players)
+        .where(eq(players.id, data.id));
 
       expect(participantList).toHaveLength(1);
       expect(participantList[0].name).toBe('Eve');

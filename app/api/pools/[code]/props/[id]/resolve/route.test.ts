@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb } from '@/src/lib/test-db';
-import { pools, participants, props, picks } from '@/src/lib/schema';
+import { pools, players, props, picks } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
 import { resolvePropHandler, type Database } from './route';
 
@@ -73,7 +73,7 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
     const participant2Id = crypto.randomUUID();
     const participant3Id = crypto.randomUUID();
 
-    await db.insert(participants).values([
+    await db.insert(players).values([
       {
         id: participant1Id,
         poolId,
@@ -113,7 +113,7 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
     await db.insert(picks).values([
       {
         id: crypto.randomUUID(),
-        participantId: participant1Id,
+        playerId: participant1Id,
         propId,
         selectedOptionIndex: 0, // Team A
         pointsEarned: null,
@@ -122,7 +122,7 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
       },
       {
         id: crypto.randomUUID(),
-        participantId: participant2Id,
+        playerId: participant2Id,
         propId,
         selectedOptionIndex: 1, // Team B
         pointsEarned: null,
@@ -131,7 +131,7 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
       },
       {
         id: crypto.randomUUID(),
-        participantId: participant3Id,
+        playerId: participant3Id,
         propId,
         selectedOptionIndex: 1, // Team B
         pointsEarned: null,
@@ -199,7 +199,7 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
       const bobPicks = await db
         .select()
         .from(picks)
-        .where(eq(picks.participantId, participant2Id));
+        .where(eq(picks.playerId, participant2Id));
 
       expect(bobPicks[0].pointsEarned).toBe(10);
     });
@@ -219,7 +219,7 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
       const alicePicks = await db
         .select()
         .from(picks)
-        .where(eq(picks.participantId, participant1Id));
+        .where(eq(picks.playerId, participant1Id));
 
       expect(alicePicks[0].pointsEarned).toBe(0);
     });
@@ -239,22 +239,22 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
       // Alice picked 0 (wrong) = 0 points
       const alice = await db
         .select()
-        .from(participants)
-        .where(eq(participants.id, participant1Id));
+        .from(players)
+        .where(eq(players.id, participant1Id));
       expect(alice[0].totalPoints).toBe(0);
 
       // Bob picked 1 (correct) = 10 points
       const bob = await db
         .select()
-        .from(participants)
-        .where(eq(participants.id, participant2Id));
+        .from(players)
+        .where(eq(players.id, participant2Id));
       expect(bob[0].totalPoints).toBe(10);
 
       // Carol picked 1 (correct) = 10 points
       const carol = await db
         .select()
-        .from(participants)
-        .where(eq(participants.id, participant3Id));
+        .from(players)
+        .where(eq(players.id, participant3Id));
       expect(carol[0].totalPoints).toBe(10);
     });
   });
@@ -396,8 +396,8 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
       );
 
       // Check Alice has 10 points, Bob/Carol have 0
-      let alice = await db.select().from(participants).where(eq(participants.id, participant1Id));
-      let bob = await db.select().from(participants).where(eq(participants.id, participant2Id));
+      let alice = await db.select().from(players).where(eq(players.id, participant1Id));
+      let bob = await db.select().from(players).where(eq(players.id, participant2Id));
       expect(alice[0].totalPoints).toBe(10);
       expect(bob[0].totalPoints).toBe(0);
 
@@ -410,9 +410,9 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
       );
 
       // Check Alice now has 0 points, Bob/Carol now have 10
-      alice = await db.select().from(participants).where(eq(participants.id, participant1Id));
-      bob = await db.select().from(participants).where(eq(participants.id, participant2Id));
-      const carol = await db.select().from(participants).where(eq(participants.id, participant3Id));
+      alice = await db.select().from(players).where(eq(players.id, participant1Id));
+      bob = await db.select().from(players).where(eq(players.id, participant2Id));
+      const carol = await db.select().from(players).where(eq(players.id, participant3Id));
       expect(alice[0].totalPoints).toBe(0);
       expect(bob[0].totalPoints).toBe(10);
       expect(carol[0].totalPoints).toBe(10);

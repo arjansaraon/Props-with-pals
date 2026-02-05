@@ -53,7 +53,7 @@ export async function setupTestDb() {
   `);
 
   await db.run(sql`
-    CREATE TABLE IF NOT EXISTS participants (
+    CREATE TABLE IF NOT EXISTS players (
       id TEXT PRIMARY KEY,
       pool_id TEXT NOT NULL REFERENCES pools(id),
       name TEXT NOT NULL,
@@ -69,7 +69,7 @@ export async function setupTestDb() {
   await db.run(sql`
     CREATE TABLE IF NOT EXISTS picks (
       id TEXT PRIMARY KEY,
-      participant_id TEXT NOT NULL REFERENCES participants(id),
+      player_id TEXT NOT NULL REFERENCES players(id),
       prop_id TEXT NOT NULL REFERENCES props(id),
       selected_option_index INTEGER NOT NULL,
       points_earned INTEGER,
@@ -79,12 +79,12 @@ export async function setupTestDb() {
   `);
 
   // Create indexes
-  await db.run(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_participants_pool_name ON participants(pool_id, name)`);
-  await db.run(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_picks_participant_prop ON picks(participant_id, prop_id)`);
+  await db.run(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_players_pool_name ON players(pool_id, name)`);
+  await db.run(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_picks_participant_prop ON picks(player_id, prop_id)`);
   await db.run(sql`CREATE INDEX IF NOT EXISTS idx_props_pool ON props(pool_id)`);
-  await db.run(sql`CREATE INDEX IF NOT EXISTS idx_participants_pool ON participants(pool_id)`);
-  await db.run(sql`CREATE INDEX IF NOT EXISTS idx_participants_pool_secret ON participants(pool_id, secret)`);
-  await db.run(sql`CREATE INDEX IF NOT EXISTS idx_picks_participant ON picks(participant_id)`);
+  await db.run(sql`CREATE INDEX IF NOT EXISTS idx_players_pool ON players(pool_id)`);
+  await db.run(sql`CREATE INDEX IF NOT EXISTS idx_players_pool_secret ON players(pool_id, secret)`);
+  await db.run(sql`CREATE INDEX IF NOT EXISTS idx_picks_participant ON picks(player_id)`);
   await db.run(sql`CREATE INDEX IF NOT EXISTS idx_picks_prop ON picks(prop_id)`);
 
   // Cleanup function to delete the temp file

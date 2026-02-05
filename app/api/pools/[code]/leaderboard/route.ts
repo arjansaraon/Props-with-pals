@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { pools, participants } from '@/src/lib/schema';
+import { pools, players } from '@/src/lib/schema';
 import { eq, desc, asc } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
@@ -36,13 +36,13 @@ export async function getLeaderboardHandler(
     // Get all participants for this pool, ordered by points DESC, name ASC
     const participantList = await database
       .select({
-        id: participants.id,
-        name: participants.name,
-        totalPoints: participants.totalPoints,
+        id: players.id,
+        name: players.name,
+        totalPoints: players.totalPoints,
       })
-      .from(participants)
-      .where(eq(participants.poolId, pool.id))
-      .orderBy(desc(participants.totalPoints), asc(participants.name));
+      .from(players)
+      .where(eq(players.poolId, pool.id))
+      .orderBy(desc(players.totalPoints), asc(players.name));
 
     // Add rank to each participant
     const leaderboard = participantList.map((p, index) => ({

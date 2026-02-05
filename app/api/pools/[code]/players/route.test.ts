@@ -1,20 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb } from '@/src/lib/test-db';
-import { pools, participants } from '@/src/lib/schema';
-import { getParticipantsHandler, type Database } from './route';
+import { pools, players } from '@/src/lib/schema';
+import { getPlayersHandler, type Database } from './route';
 import { NextRequest } from 'next/server';
 
 // Helper to create a mock GET Request
 function createGetRequest(code: string, secret?: string) {
   const url = secret
-    ? `http://localhost:3000/api/pools/${code}/participants?secret=${secret}`
-    : `http://localhost:3000/api/pools/${code}/participants`;
+    ? `http://localhost:3000/api/pools/${code}/players?secret=${secret}`
+    : `http://localhost:3000/api/pools/${code}/players`;
   return new NextRequest(url, {
     method: 'GET',
   });
 }
 
-describe('GET /api/pools/[code]/participants', () => {
+describe('GET /api/pools/[code]/players', () => {
   let db: Database;
   let cleanup: () => void;
 
@@ -48,7 +48,7 @@ describe('GET /api/pools/[code]/participants', () => {
     await db.insert(pools).values(poolData);
 
     // Create captain as participant
-    await db.insert(participants).values({
+    await db.insert(players).values({
       id: crypto.randomUUID(),
       poolId: poolData.id,
       name: poolData.captainName,
@@ -64,10 +64,10 @@ describe('GET /api/pools/[code]/participants', () => {
   }
 
   // Helper to add a participant
-  async function addParticipant(
+  async function addPlayer(
     poolId: string,
     name: string,
-    overrides: Partial<typeof participants.$inferInsert> = {}
+    overrides: Partial<typeof players.$inferInsert> = {}
   ) {
     const now = new Date().toISOString();
     const participantData = {
@@ -83,17 +83,17 @@ describe('GET /api/pools/[code]/participants', () => {
       ...overrides,
     };
 
-    await db.insert(participants).values(participantData);
+    await db.insert(players).values(participantData);
     return participantData;
   }
 
   describe('Happy Path', () => {
     it('returns all participants for an open pool', async () => {
       const pool = await createTestPool({ inviteCode: 'PART02' });
-      await addParticipant(pool.id, 'Alice');
-      await addParticipant(pool.id, 'Bob');
+      await addPlayer(pool.id, 'Alice');
+      await addPlayer(pool.id, 'Bob');
 
-      const response = await getParticipantsHandler(
+      const response = await getPlayersHandler(
         createGetRequest('PART02', pool.captainSecret),
         'PART02',
         db
@@ -101,21 +101,21 @@ describe('GET /api/pools/[code]/participants', () => {
 
       expect(response.status).toBe(200);
       const data = await response.json();
-      expect(data.participants).toHaveLength(3); // Captain + Alice + Bob
+      expect(data.players).toHaveLength(3); // Captain + Alice + Bob
     });
 
     it('returns participant names and points', async () => {
       const pool = await createTestPool({ inviteCode: 'PART03' });
-      await addParticipant(pool.id, 'Alice', { totalPoints: 50 });
+      await addPlayer(pool.id, 'Alice', { totalPoints: 50 });
 
-      const response = await getParticipantsHandler(
+      const response = await getPlayersHandler(
         createGetRequest('PART03', pool.captainSecret),
         'PART03',
         db
       );
 
       const data = await response.json();
-      const alice = data.participants.find((p: { name: string }) => p.name === 'Alice');
+      const alice = data.players.find((p: { name: string }) => p.name === 'Alice');
       expect(alice).toBeDefined();
       expect(alice.name).toBe('Alice');
       expect(alice.totalPoints).toBe(50);
@@ -124,7 +124,7 @@ describe('GET /api/pools/[code]/participants', () => {
     it('returns participant secrets for captain to share links', async () => {
       const pool = await createTestPool({ inviteCode: 'PART04' });
 
-      const response = await getParticipantsHandler(
+      const response = await getPlayersHandler(
         createGetRequest('PART04', pool.captainSecret),
         'PART04',
         db
@@ -132,30 +132,30 @@ describe('GET /api/pools/[code]/participants', () => {
 
       const data = await response.json();
       // Captain can see secrets to share participant links
-      expect(data.participants[0].secret).toBeDefined();
+      expect(data.players[0].secret).toBeDefined();
     });
 
     it('returns participants sorted by name', async () => {
       const pool = await createTestPool({ inviteCode: 'PART05' });
-      await addParticipant(pool.id, 'Charlie');
-      await addParticipant(pool.id, 'Alice');
-      await addParticipant(pool.id, 'Bob');
+      await addPlayer(pool.id, 'Charlie');
+      await addPlayer(pool.id, 'Alice');
+      await addPlayer(pool.id, 'Bob');
 
-      const response = await getParticipantsHandler(
+      const response = await getPlayersHandler(
         createGetRequest('PART05', pool.captainSecret),
         'PART05',
         db
       );
 
       const data = await response.json();
-      const names = data.participants.map((p: { name: string }) => p.name);
+      const names = data.players.map((p: { name: string }) => p.name);
       expect(names).toEqual(['Alice', 'Bob', 'Captain', 'Charlie']);
     });
 
     it('returns only captain for pool with no other participants', async () => {
       const pool = await createTestPool({ inviteCode: 'PART06' });
 
-      const response = await getParticipantsHandler(
+      const response = await getPlayersHandler(
         createGetRequest('PART06', pool.captainSecret),
         'PART06',
         db
@@ -163,7 +163,7 @@ describe('GET /api/pools/[code]/participants', () => {
 
       expect(response.status).toBe(200);
       const data = await response.json();
-      expect(data.participants).toHaveLength(1); // Just captain
+      expect(data.players).toHaveLength(1); // Just captain
     });
   });
 
@@ -171,7 +171,7 @@ describe('GET /api/pools/[code]/participants', () => {
     it('returns participants for captain in draft pool', async () => {
       const pool = await createTestPool({ inviteCode: 'PART07', status: 'draft' });
 
-      const response = await getParticipantsHandler(
+      const response = await getPlayersHandler(
         createGetRequest('PART07', pool.captainSecret),
         'PART07',
         db
@@ -179,13 +179,13 @@ describe('GET /api/pools/[code]/participants', () => {
 
       expect(response.status).toBe(200);
       const data = await response.json();
-      expect(data.participants).toHaveLength(1);
+      expect(data.players).toHaveLength(1);
     });
 
     it('returns 401 for non-captain trying to view pool participants', async () => {
       await createTestPool({ inviteCode: 'PART08', status: 'draft' });
 
-      const response = await getParticipantsHandler(
+      const response = await getPlayersHandler(
         createGetRequest('PART08'),
         'PART08',
         db
@@ -199,7 +199,7 @@ describe('GET /api/pools/[code]/participants', () => {
 
   describe('Error Handling', () => {
     it('returns 404 for invalid pool code', async () => {
-      const response = await getParticipantsHandler(
+      const response = await getPlayersHandler(
         createGetRequest('INVALID'),
         'INVALID',
         db
@@ -211,13 +211,13 @@ describe('GET /api/pools/[code]/participants', () => {
     });
   });
 
-  describe('Participant Status', () => {
+  describe('Player Status', () => {
     it('returns all participants regardless of status', async () => {
       const pool = await createTestPool({ inviteCode: 'PART09' });
-      await addParticipant(pool.id, 'Alice', { status: 'active' });
-      await addParticipant(pool.id, 'Bob', { status: 'removed' });
+      await addPlayer(pool.id, 'Alice', { status: 'active' });
+      await addPlayer(pool.id, 'Bob', { status: 'removed' });
 
-      const response = await getParticipantsHandler(
+      const response = await getPlayersHandler(
         createGetRequest('PART09', pool.captainSecret),
         'PART09',
         db
@@ -225,8 +225,8 @@ describe('GET /api/pools/[code]/participants', () => {
 
       const data = await response.json();
       // Captain sees all participants including removed ones
-      expect(data.participants).toHaveLength(3); // Captain + Alice + Bob
-      const names = data.participants.map((p: { name: string }) => p.name);
+      expect(data.players).toHaveLength(3); // Captain + Alice + Bob
+      const names = data.players.map((p: { name: string }) => p.name);
       expect(names).toContain('Bob');
     });
   });

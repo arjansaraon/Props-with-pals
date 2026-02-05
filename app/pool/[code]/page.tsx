@@ -71,7 +71,7 @@ export default function JoinPool({
         if (data.code === 'NAME_TAKEN') {
           setError('That name is already taken. Please choose another.');
         } else if (data.code === 'POOL_LOCKED') {
-          setError('This pool is no longer accepting new participants.');
+          setError('This pool is no longer accepting new players.');
         } else {
           setError(data.message || 'Failed to join pool');
         }
@@ -125,7 +125,7 @@ export default function JoinPool({
               {pool.name}
             </h1>
             <p className="text-muted-foreground mb-4">
-              This pool is {pool.status} and no longer accepting new participants.
+              This pool is {pool.status} and no longer accepting new players.
             </p>
             <a
               href={`/pool/${code}/leaderboard`}

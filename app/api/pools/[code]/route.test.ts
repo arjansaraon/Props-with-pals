@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb } from '@/src/lib/test-db';
-import { pools, participants } from '@/src/lib/schema';
+import { pools, players } from '@/src/lib/schema';
 import { getPoolHandler, updatePoolHandler, type Database } from './route';
 import { NextRequest } from 'next/server';
 
@@ -56,7 +56,7 @@ describe('GET /api/pools/[code]', () => {
     await db.insert(pools).values(poolData);
 
     // Also create captain as participant
-    await db.insert(participants).values({
+    await db.insert(players).values({
       id: crypto.randomUUID(),
       poolId: poolData.id,
       name: poolData.captainName,

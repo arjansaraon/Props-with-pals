@@ -3,22 +3,21 @@
 import { Spinner } from '@/app/components/spinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
-import type { Participant } from '../types';
+import type { Player } from '../types';
 
 interface PlayersTabProps {
   code: string;
-  participants: Participant[];
+  players: Player[];
   isLoading: boolean;
 }
 
-export function PlayersTab({ code, participants, isLoading }: PlayersTabProps) {
-
+export function PlayersTab({ code, players, isLoading }: PlayersTabProps) {
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle>Players ({participants.length})</CardTitle>
+        <CardTitle>Players ({players.length})</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Participants are logged in on their own devices. They can access picks at /pool/{code}/picks
+          Players are logged in on their own devices. They can access picks at /pool/{code}/picks
         </p>
       </CardHeader>
       <CardContent>
@@ -26,22 +25,20 @@ export function PlayersTab({ code, participants, isLoading }: PlayersTabProps) {
           <div className="flex justify-center py-8">
             <Spinner size="lg" className="text-primary" />
           </div>
-        ) : participants.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">No participants have joined yet.</p>
+        ) : players.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">No players have joined yet.</p>
         ) : (
           <div className="space-y-3">
-            {participants.map((participant) => (
+            {players.map((player) => (
               <div
-                key={participant.id}
+                key={player.id}
                 className="flex items-center justify-between p-3 border border-border rounded-lg"
               >
-                <div>
-                  <span className="font-medium text-foreground">{participant.name}</span>
-                  {participant.isCaptain && (
-                    <Badge variant="default" className="ml-2">Captain</Badge>
-                  )}
-                  <p className="text-sm text-muted-foreground">{participant.totalPoints} pts</p>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-foreground">{player.name}</span>
+                  {player.isCaptain && <Badge variant="secondary">Captain</Badge>}
                 </div>
+                <p className="text-sm text-muted-foreground">{player.totalPoints} pts</p>
               </div>
             ))}
           </div>

@@ -2,6 +2,7 @@
 
 import { Spinner } from '@/app/components/spinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Badge } from '@/app/components/ui/badge';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
@@ -22,8 +23,10 @@ interface AddPropFormReturn {
   options: string[];
   pointValue: string;
   isAddingProp: boolean;
+  isFormOpen: boolean;
   setQuestionText: (value: string) => void;
   setPointValue: (value: string) => void;
+  setIsFormOpen: (value: boolean) => void;
   addOption: () => void;
   updateOption: (index: number, value: string) => void;
   removeOption: (index: number) => void;
@@ -57,18 +60,38 @@ export function AdminTab({
     options,
     pointValue,
     isAddingProp,
+    isFormOpen,
     setQuestionText,
     setPointValue,
+    setIsFormOpen,
     addOption,
     updateOption,
     removeOption,
     handleSubmit: handleAddProp,
   } = addPropForm;
+  const statusConfig = {
+    open: { label: 'Open', variant: 'success' as const },
+    locked: { label: 'Locked', variant: 'warning' as const },
+    completed: { label: 'Completed', variant: 'info' as const },
+  };
+
+  const currentStatus = statusConfig[poolStatus as keyof typeof statusConfig] || statusConfig.open;
+
   return (
     <>
-      {/* Pool Status Actions */}
-      {poolStatus === 'open' && (
-        <div className="mb-6">
+      {/* Pool Status Row - Status Badge + Action Button */}
+      <div
+        data-testid="pool-status-row"
+        className="flex items-center justify-between mb-6 p-4 bg-muted/50 rounded-lg"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">Pool Status:</span>
+          <Badge variant={currentStatus.variant} className="text-base px-3 py-1">
+            {currentStatus.label}
+          </Badge>
+        </div>
+
+        {poolStatus === 'open' && (
           <Button
             onClick={handleLockPool}
             disabled={isLocking}
@@ -78,11 +101,9 @@ export function AdminTab({
             <Lock className="h-4 w-4" />
             {isLocking ? 'Locking...' : 'Lock Pool'}
           </Button>
-        </div>
-      )}
+        )}
 
-      {poolStatus === 'locked' && (
-        <div className="mb-6">
+        {poolStatus === 'locked' && (
           <Button
             onClick={handleCompletePool}
             disabled={isCompleting}
@@ -92,85 +113,18 @@ export function AdminTab({
             <Trophy className="h-4 w-4" />
             {isCompleting ? 'Completing...' : 'Complete Pool'}
           </Button>
-          <p className="text-sm text-muted-foreground mt-2">
-            Mark all props as resolved before completing the pool to finalize scores.
-          </p>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Add Prop Form */}
-      {poolStatus === 'open' && (
-        <Card className="shadow-lg mb-6">
-          <CardHeader>
-            <CardTitle>Add New Prop</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAddProp} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Question</Label>
-                <Input
-                  type="text"
-                  value={questionText}
-                  onChange={(e) => setQuestionText(e.target.value)}
-                  placeholder="Who will score the first touchdown?"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Options</Label>
-                {options.map((option, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      type="text"
-                      value={option}
-                      onChange={(e) => updateOption(index, e.target.value)}
-                      placeholder={`Option ${index + 1}`}
-                      required
-                    />
-                    {options.length > 2 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => removeOption(index)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                {options.length < 10 && (
-                  <Button type="button" variant="ghost" onClick={addOption} className="text-primary">
-                    <Plus className="h-4 w-4" /> Add Option
-                  </Button>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Point Value</Label>
-                <Input
-                  type="number"
-                  value={pointValue}
-                  onChange={(e) => setPointValue(e.target.value)}
-                  min="1"
-                  required
-                  className="w-32"
-                />
-              </div>
-
-              <Button type="submit" disabled={isAddingProp}>
-                {isAddingProp && <Spinner size="sm" />}
-                {isAddingProp ? 'Adding...' : 'Add Prop'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+      {poolStatus === 'locked' && (
+        <p className="text-sm text-muted-foreground mb-6 -mt-4">
+          Mark all props as resolved before completing the pool to finalize scores.
+        </p>
       )}
 
       {/* Props List */}
       {propsList.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4 mb-6">
           <h2 className="text-lg font-semibold text-foreground">Props ({propsList.length})</h2>
           {propsList.map((prop) => (
             <Card key={prop.id} className="shadow-lg">
@@ -241,10 +195,91 @@ export function AdminTab({
         </div>
       )}
 
-      {propsList.length === 0 && (
-        <Card className="shadow-lg">
+      {/* No Props Warning - shown above Add Prop button when empty */}
+      {propsList.length === 0 && poolStatus === 'open' && (
+        <Card className="shadow-lg mb-6">
           <CardContent className="py-6">
-            <p className="text-muted-foreground text-center">No props yet. Add your first prop above!</p>
+            <p className="text-muted-foreground text-center">No props yet. Add your first prop below!</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Add Prop Form - Collapsible */}
+      {poolStatus === 'open' && !isFormOpen && (
+        <Button
+          onClick={() => setIsFormOpen(true)}
+          variant="outline"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          + Add Prop
+        </Button>
+      )}
+
+      {poolStatus === 'open' && isFormOpen && (
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Add New Prop</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddProp} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Question</Label>
+                <Input
+                  type="text"
+                  value={questionText}
+                  onChange={(e) => setQuestionText(e.target.value)}
+                  placeholder="Who will score the first touchdown?"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Options</Label>
+                {options.map((option, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={option}
+                      onChange={(e) => updateOption(index, e.target.value)}
+                      placeholder={`Option ${index + 1}`}
+                      required
+                    />
+                    {options.length > 2 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => removeOption(index)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {options.length < 10 && (
+                  <Button type="button" variant="ghost" onClick={addOption} className="text-primary">
+                    <Plus className="h-4 w-4" /> Add Option
+                  </Button>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Point Value</Label>
+                <Input
+                  type="number"
+                  value={pointValue}
+                  onChange={(e) => setPointValue(e.target.value)}
+                  min="1"
+                  required
+                  className="w-32"
+                />
+              </div>
+
+              <Button type="submit" disabled={isAddingProp}>
+                {isAddingProp && <Spinner size="sm" />}
+                {isAddingProp ? 'Adding...' : 'Add Prop'}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       )}

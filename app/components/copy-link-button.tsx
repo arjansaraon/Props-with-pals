@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/app/components/ui/button';
 import { Check, Copy } from 'lucide-react';
+import { useToast } from '@/app/hooks/use-toast';
 
 interface CopyLinkButtonProps {
   url: string;
@@ -12,11 +13,13 @@ interface CopyLinkButtonProps {
 
 export function CopyLinkButton({ url, className = '', variant = 'default' }: CopyLinkButtonProps) {
   const [copied, setCopied] = useState(false);
+  const { showToast } = useToast();
 
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      showToast('Link copied to clipboard!', 'success');
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback for older browsers
@@ -27,6 +30,7 @@ export function CopyLinkButton({ url, className = '', variant = 'default' }: Cop
       document.execCommand('copy');
       document.body.removeChild(textArea);
       setCopied(true);
+      showToast('Link copied to clipboard!', 'success');
       setTimeout(() => setCopied(false), 2000);
     }
   }

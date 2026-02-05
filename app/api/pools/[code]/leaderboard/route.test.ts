@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb } from '@/src/lib/test-db';
-import { pools, participants } from '@/src/lib/schema';
+import { pools, players } from '@/src/lib/schema';
 import { getLeaderboardHandler, type Database } from './route';
 
 // Helper to create a mock GET Request
@@ -25,7 +25,7 @@ describe('GET /api/pools/[code]/leaderboard', () => {
   });
 
   // Helper to create a test pool with participants
-  async function createTestPoolWithParticipants(
+  async function createTestPoolWithPlayers(
     inviteCode: string,
     participantData: Array<{ name: string; totalPoints: number }>
   ) {
@@ -46,7 +46,7 @@ describe('GET /api/pools/[code]/leaderboard', () => {
 
     // Create participants
     for (const p of participantData) {
-      await db.insert(participants).values({
+      await db.insert(players).values({
         id: crypto.randomUUID(),
         poolId: poolData.id,
         name: p.name,
@@ -64,7 +64,7 @@ describe('GET /api/pools/[code]/leaderboard', () => {
 
   describe('Happy Path', () => {
     it('returns participants ranked by total_points DESC', async () => {
-      await createTestPoolWithParticipants('LEAD01', [
+      await createTestPoolWithPlayers('LEAD01', [
         { name: 'Alice', totalPoints: 10 },
         { name: 'Bob', totalPoints: 30 },
         { name: 'Carol', totalPoints: 20 },
@@ -85,7 +85,7 @@ describe('GET /api/pools/[code]/leaderboard', () => {
     });
 
     it('sorts by name ASC for ties (alphabetical)', async () => {
-      await createTestPoolWithParticipants('LEAD02', [
+      await createTestPoolWithPlayers('LEAD02', [
         { name: 'Zach', totalPoints: 10 },
         { name: 'Alice', totalPoints: 10 },
         { name: 'Mike', totalPoints: 10 },
@@ -101,7 +101,7 @@ describe('GET /api/pools/[code]/leaderboard', () => {
     });
 
     it('includes name and totalPoints in response', async () => {
-      await createTestPoolWithParticipants('LEAD03', [
+      await createTestPoolWithPlayers('LEAD03', [
         { name: 'Player1', totalPoints: 50 },
       ]);
 
@@ -114,7 +114,7 @@ describe('GET /api/pools/[code]/leaderboard', () => {
     });
 
     it('does NOT include secrets in response', async () => {
-      await createTestPoolWithParticipants('LEAD04', [
+      await createTestPoolWithPlayers('LEAD04', [
         { name: 'Player1', totalPoints: 50 },
       ]);
 
@@ -126,7 +126,7 @@ describe('GET /api/pools/[code]/leaderboard', () => {
     });
 
     it('includes rank in response', async () => {
-      await createTestPoolWithParticipants('LEAD05', [
+      await createTestPoolWithPlayers('LEAD05', [
         { name: 'Alice', totalPoints: 30 },
         { name: 'Bob', totalPoints: 20 },
       ]);

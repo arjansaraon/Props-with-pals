@@ -25,9 +25,9 @@ export interface CaptainTabsClientProps {
 }
 
 /**
- * Participant information for the Players tab
+ * Player information for the Players tab
  */
-export interface Participant {
+export interface Player {
   id: string;
   name: string;
   secret: string;

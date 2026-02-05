@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb } from '@/src/lib/test-db';
-import { pools, participants, props, picks } from '@/src/lib/schema';
+import { pools, players, props, picks } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { submitPickHandler, type Database } from './route';
 
@@ -28,7 +28,7 @@ describe('POST /api/pools/[code]/picks', () => {
   });
 
   // Helper to create a test pool with a prop and participant
-  async function createTestPoolWithPropAndParticipant(
+  async function createTestPoolWithPropAndPlayer(
     poolOverrides: Partial<typeof pools.$inferInsert> = {}
   ) {
     const now = new Date().toISOString();
@@ -64,10 +64,10 @@ describe('POST /api/pools/[code]/picks', () => {
     });
 
     // Create a participant
-    const participantId = crypto.randomUUID();
+    const playerId = crypto.randomUUID();
     const participantSecret = crypto.randomUUID();
-    await db.insert(participants).values({
-      id: participantId,
+    await db.insert(players).values({
+      id: playerId,
       poolId: poolData.id,
       name: 'Test Player',
       secret: participantSecret,
@@ -81,14 +81,14 @@ describe('POST /api/pools/[code]/picks', () => {
     return {
       pool: poolData,
       propId,
-      participantId,
+      playerId,
       participantSecret,
     };
   }
 
   describe('Happy Path', () => {
     it('creates pick for participant', async () => {
-      const { pool, propId, participantSecret } = await createTestPoolWithPropAndParticipant({
+      const { pool, propId, participantSecret } = await createTestPoolWithPropAndPlayer({
         inviteCode: 'PICK02',
       });
 
@@ -108,7 +108,7 @@ describe('POST /api/pools/[code]/picks', () => {
     });
 
     it('returns pick id as UUID', async () => {
-      const { propId, participantSecret } = await createTestPoolWithPropAndParticipant({
+      const { propId, participantSecret } = await createTestPoolWithPropAndPlayer({
         inviteCode: 'PICK03',
       });
 
@@ -128,7 +128,7 @@ describe('POST /api/pools/[code]/picks', () => {
     });
 
     it('overwrites existing pick (upsert)', async () => {
-      const { propId, participantSecret, participantId } = await createTestPoolWithPropAndParticipant({
+      const { propId, participantSecret, playerId } = await createTestPoolWithPropAndPlayer({
         inviteCode: 'PICK04',
       });
 
@@ -158,7 +158,7 @@ describe('POST /api/pools/[code]/picks', () => {
       const allPicks = await db
         .select()
         .from(picks)
-        .where(eq(picks.participantId, participantId));
+        .where(eq(picks.playerId, playerId));
 
       expect(allPicks).toHaveLength(1);
       expect(allPicks[0].selectedOptionIndex).toBe(2);
@@ -167,7 +167,7 @@ describe('POST /api/pools/[code]/picks', () => {
 
   describe('Authorization', () => {
     it('rejects wrong participant secret (401)', async () => {
-      const { propId } = await createTestPoolWithPropAndParticipant({
+      const { propId } = await createTestPoolWithPropAndPlayer({
         inviteCode: 'PICK05',
       });
 
@@ -186,7 +186,7 @@ describe('POST /api/pools/[code]/picks', () => {
     });
 
     it('rejects missing secret (401)', async () => {
-      const { propId } = await createTestPoolWithPropAndParticipant({
+      const { propId } = await createTestPoolWithPropAndPlayer({
         inviteCode: 'PICK06',
       });
 
@@ -209,7 +209,7 @@ describe('POST /api/pools/[code]/picks', () => {
 
   describe('Pool Status Checks', () => {
     it('rejects if pool is locked (403)', async () => {
-      const { propId, participantSecret } = await createTestPoolWithPropAndParticipant({
+      const { propId, participantSecret } = await createTestPoolWithPropAndPlayer({
         inviteCode: 'PICK07',
         status: 'locked',
       });
@@ -229,7 +229,7 @@ describe('POST /api/pools/[code]/picks', () => {
     });
 
     it('rejects if pool is completed (403)', async () => {
-      const { propId, participantSecret } = await createTestPoolWithPropAndParticipant({
+      const { propId, participantSecret } = await createTestPoolWithPropAndPlayer({
         inviteCode: 'PICK08',
         status: 'completed',
       });
@@ -251,7 +251,7 @@ describe('POST /api/pools/[code]/picks', () => {
 
   describe('Validation', () => {
     it('rejects invalid prop_id (404)', async () => {
-      const { participantSecret } = await createTestPoolWithPropAndParticipant({
+      const { participantSecret } = await createTestPoolWithPropAndPlayer({
         inviteCode: 'PICK09',
       });
 
@@ -270,7 +270,7 @@ describe('POST /api/pools/[code]/picks', () => {
     });
 
     it('rejects negative option index (400)', async () => {
-      const { propId, participantSecret } = await createTestPoolWithPropAndParticipant({
+      const { propId, participantSecret } = await createTestPoolWithPropAndPlayer({
         inviteCode: 'PICK10',
       });
 
@@ -289,7 +289,7 @@ describe('POST /api/pools/[code]/picks', () => {
     });
 
     it('rejects option index out of range (400)', async () => {
-      const { propId, participantSecret } = await createTestPoolWithPropAndParticipant({
+      const { propId, participantSecret } = await createTestPoolWithPropAndPlayer({
         inviteCode: 'PICK11',
       });
 

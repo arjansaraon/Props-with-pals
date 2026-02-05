@@ -14,8 +14,10 @@ interface UseAddPropFormReturn {
   options: string[];
   pointValue: string;
   isAddingProp: boolean;
+  isFormOpen: boolean;
   setQuestionText: (value: string) => void;
   setPointValue: (value: string) => void;
+  setIsFormOpen: (value: boolean) => void;
   addOption: () => void;
   updateOption: (index: number, value: string) => void;
   removeOption: (index: number) => void;
@@ -30,6 +32,7 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
   const [options, setOptions] = useState(['', '']);
   const [pointValue, setPointValue] = useState('10');
   const [isAddingProp, setIsAddingProp] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   function addOption() {
     if (options.length < 10) {
@@ -74,6 +77,7 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
       setQuestionText('');
       setOptions(['', '']);
       setPointValue('10');
+      setIsFormOpen(false);
       showToast('Prop added successfully', 'success');
       router.refresh();
     } catch {
@@ -88,8 +92,10 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
     options,
     pointValue,
     isAddingProp,
+    isFormOpen,
     setQuestionText,
     setPointValue,
+    setIsFormOpen,
     addOption,
     updateOption,
     removeOption,

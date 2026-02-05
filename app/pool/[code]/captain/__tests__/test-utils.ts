@@ -10,7 +10,7 @@ export interface MockProp {
   order: number;
 }
 
-export interface MockParticipant {
+export interface MockPlayer {
   id: string;
   name: string;
   secret: string;
@@ -38,7 +38,7 @@ export function createMockProp(overrides?: Partial<MockProp>): MockProp {
   };
 }
 
-export function createMockParticipant(overrides?: Partial<MockParticipant>): MockParticipant {
+export function createMockPlayer(overrides?: Partial<MockPlayer>): MockPlayer {
   return {
     id: 'participant-1',
     name: 'Test User',

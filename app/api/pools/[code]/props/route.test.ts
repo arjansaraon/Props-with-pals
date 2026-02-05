@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb } from '@/src/lib/test-db';
-import { pools, props, participants } from '@/src/lib/schema';
+import { pools, props, players } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
 import { createPropHandler, type Database } from './route';
 

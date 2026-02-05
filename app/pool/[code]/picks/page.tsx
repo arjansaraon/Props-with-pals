@@ -1,5 +1,5 @@
 import { db } from "@/src/lib/db";
-import { pools, props, picks, participants } from "@/src/lib/schema";
+import { pools, props, picks, players } from "@/src/lib/schema";
 import { eq, and } from "drizzle-orm";
 import Link from "next/link";
 import { headers } from "next/headers";
@@ -17,7 +17,7 @@ import { Button } from "@/app/components/ui/button";
 import { Alert, AlertDescription } from "@/app/components/ui/alert";
 import { ArrowRight, AlertCircle, Lock, AlertTriangle } from "lucide-react";
 
-export default async function ParticipantPicks({
+export default async function PlayerPicks({
   params,
 }: {
   params: Promise<{ code: string }>;
@@ -64,9 +64,9 @@ export default async function ParticipantPicks({
   if (secret) {
     const participantResult = await db
       .select()
-      .from(participants)
+      .from(players)
       .where(
-        and(eq(participants.poolId, pool.id), eq(participants.secret, secret)),
+        and(eq(players.poolId, pool.id), eq(players.secret, secret)),
       )
       .limit(1);
 
@@ -77,7 +77,7 @@ export default async function ParticipantPicks({
       const picksResult = await db
         .select()
         .from(picks)
-        .where(eq(picks.participantId, participant.id));
+        .where(eq(picks.playerId, participant.id));
 
       myPicks = picksResult.map((p) => ({
         propId: p.propId,

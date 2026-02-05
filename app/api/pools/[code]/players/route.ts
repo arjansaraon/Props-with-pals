@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as schema from '@/src/lib/schema';
-import { participants, pools } from '@/src/lib/schema';
+import { players, pools } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
 import { getSecret, safeCompareSecrets } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
@@ -12,7 +12,7 @@ export type Database = LibSQLDatabase<typeof schema>;
  * Gets all participants in a pool (captain only).
  * Exported for testing with injected database.
  */
-export async function getParticipantsHandler(
+export async function getPlayersHandler(
   request: NextRequest,
   code: string,
   database: Database
@@ -44,25 +44,25 @@ export async function getParticipantsHandler(
     }
 
     // Fetch all participants for this pool
-    const participantsList = await database
+    const playersList = await database
       .select({
-        id: participants.id,
-        name: participants.name,
-        secret: participants.secret,
-        totalPoints: participants.totalPoints,
-        joinedAt: participants.joinedAt,
+        id: players.id,
+        name: players.name,
+        secret: players.secret,
+        totalPoints: players.totalPoints,
+        joinedAt: players.joinedAt,
       })
-      .from(participants)
-      .where(eq(participants.poolId, pool.id))
-      .orderBy(participants.name);
+      .from(players)
+      .where(eq(players.poolId, pool.id))
+      .orderBy(players.name);
 
     // Mark the captain in the list (using timing-safe comparison)
-    const participantsWithRole = participantsList.map((p) => ({
+    const playersWithRole = playersList.map((p) => ({
       ...p,
       isCaptain: safeCompareSecrets(p.secret, pool.captainSecret),
     }));
 
-    return NextResponse.json({ participants: participantsWithRole }, { status: 200 });
+    return NextResponse.json({ players: playersWithRole }, { status: 200 });
   } catch (error) {
     console.error('Error fetching participants:', error);
     return NextResponse.json(
@@ -73,7 +73,7 @@ export async function getParticipantsHandler(
 }
 
 /**
- * GET /api/pools/[code]/participants
+ * GET /api/pools/[code]/players
  * Returns all participants in a pool (captain only)
  * Used for captain to recover/share participant links
  */
@@ -83,5 +83,5 @@ export async function GET(
 ): Promise<Response> {
   const { db } = await import('@/src/lib/db');
   const { code } = await params;
-  return getParticipantsHandler(request, code, db);
+  return getPlayersHandler(request, code, db);
 }

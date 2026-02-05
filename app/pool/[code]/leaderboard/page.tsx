@@ -1,5 +1,5 @@
 import { db } from '@/src/lib/db';
-import { pools, participants } from '@/src/lib/schema';
+import { pools, players } from '@/src/lib/schema';
 import { eq, desc, asc } from 'drizzle-orm';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
@@ -47,13 +47,13 @@ export default async function Leaderboard({
   // Fetch participants ordered by points
   const leaderboard = await db
     .select({
-      id: participants.id,
-      name: participants.name,
-      totalPoints: participants.totalPoints,
+      id: players.id,
+      name: players.name,
+      totalPoints: players.totalPoints,
     })
-    .from(participants)
-    .where(eq(participants.poolId, pool.id))
-    .orderBy(desc(participants.totalPoints), asc(participants.name));
+    .from(players)
+    .where(eq(players.poolId, pool.id))
+    .orderBy(desc(players.totalPoints), asc(players.name));
 
   const statusVariant = pool.status === 'open' ? 'success' : pool.status === 'locked' ? 'warning' : 'info';
 
@@ -99,12 +99,10 @@ export default async function Leaderboard({
                 {leaderboard.map((participant, index) => {
                   const rank = index + 1;
                   const isWinner = pool.status === 'completed' && rank === 1;
+                  const isClickable = pool.status !== 'open';
 
-                  return (
-                    <TableRow
-                      key={participant.id}
-                      className={isWinner ? 'bg-amber-50' : ''}
-                    >
+                  const rowContent = (
+                    <>
                       <TableCell>
                         <span
                           className={`text-sm font-medium ${
@@ -138,6 +136,57 @@ export default async function Leaderboard({
                           {participant.totalPoints}
                         </span>
                       </TableCell>
+                    </>
+                  );
+
+                  if (isClickable) {
+                    return (
+                      <TableRow
+                        key={participant.id}
+                        className={`cursor-pointer hover:bg-muted/50 transition-colors ${isWinner ? 'bg-amber-50 hover:bg-amber-100' : ''}`}
+                      >
+                        <TableCell colSpan={3} className="p-0">
+                          <Link
+                            href={`/pool/${code}/player/${participant.id}`}
+                            className="flex w-full"
+                          >
+                            <span className={`flex-none w-20 px-4 py-4 text-sm font-medium ${
+                              rank === 1
+                                ? 'text-amber-500'
+                                : rank === 2
+                                  ? 'text-slate-400'
+                                  : rank === 3
+                                    ? 'text-amber-600'
+                                    : 'text-muted-foreground'
+                            }`}>
+                              {rank === 1 && '🥇 '}
+                              {rank === 2 && '🥈 '}
+                              {rank === 3 && '🥉 '}
+                              {rank}
+                            </span>
+                            <span className="flex-1 px-4 py-4 text-sm font-medium text-foreground">
+                              {participant.name}
+                              {isWinner && (
+                                <span className="ml-2 text-amber-500">
+                                  Winner!
+                                </span>
+                              )}
+                            </span>
+                            <span className="flex-none px-4 py-4 text-right text-sm font-semibold text-foreground">
+                              {participant.totalPoints}
+                            </span>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+
+                  return (
+                    <TableRow
+                      key={participant.id}
+                      className={isWinner ? 'bg-amber-50' : ''}
+                    >
+                      {rowContent}
                     </TableRow>
                   );
                 })}

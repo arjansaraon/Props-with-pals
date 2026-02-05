@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pools, props, picks, participants } from '@/src/lib/schema';
+import { pools, props, picks, players } from '@/src/lib/schema';
 import { eq, and, sum, inArray } from 'drizzle-orm';
 import { ResolveSchema } from '@/src/lib/validators';
 import { getSecret, requireValidOrigin, safeCompareSecrets } from '@/src/lib/auth';
@@ -145,29 +145,29 @@ export async function resolvePropHandler(
       }
 
       // 4. Update participant totals (optimized: single query to get all totals)
-      const affectedParticipantIds = [...new Set(allPicks.map((p) => p.participantId))];
+      const affectedPlayerIds = [...new Set(allPicks.map((p) => p.playerId))];
 
-      if (affectedParticipantIds.length > 0) {
+      if (affectedPlayerIds.length > 0) {
         // Get all participant totals in one query instead of N queries
         const allTotals = await tx
           .select({
-            participantId: picks.participantId,
+            playerId: picks.playerId,
             total: sum(picks.pointsEarned),
           })
           .from(picks)
-          .where(inArray(picks.participantId, affectedParticipantIds))
-          .groupBy(picks.participantId);
+          .where(inArray(picks.playerId, affectedPlayerIds))
+          .groupBy(picks.playerId);
 
         // Update each participant with their new total
-        for (const { participantId, total } of allTotals) {
+        for (const { playerId, total } of allTotals) {
           const totalPoints = Number(total) || 0;
           await tx
-            .update(participants)
+            .update(players)
             .set({
               totalPoints,
               updatedAt: now,
             })
-            .where(eq(participants.id, participantId));
+            .where(eq(players.id, playerId));
         }
       }
 
@@ -189,7 +189,7 @@ export async function resolvePropHandler(
 
     const picksWithPoints = await database
       .select({
-        participantId: picks.participantId,
+        playerId: picks.playerId,
         pointsEarned: picks.pointsEarned,
       })
       .from(picks)
@@ -198,17 +198,17 @@ export async function resolvePropHandler(
     // Get participant names for response
     const participantNames = await database
       .select({
-        id: participants.id,
-        name: participants.name,
+        id: players.id,
+        name: players.name,
       })
-      .from(participants)
-      .where(eq(participants.poolId, pool.id));
+      .from(players)
+      .where(eq(players.poolId, pool.id));
 
     const nameMap = new Map(participantNames.map((p) => [p.id, p.name]));
 
     const pointsAwarded = picksWithPoints.map((p) => ({
-      participantId: p.participantId,
-      participantName: nameMap.get(p.participantId) || 'Unknown',
+      playerId: p.playerId,
+      participantName: nameMap.get(p.playerId) || 'Unknown',
       pointsEarned: p.pointsEarned || 0,
     }));
 

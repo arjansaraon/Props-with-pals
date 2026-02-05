@@ -9,9 +9,9 @@ export type PoolStatus = (typeof poolStatusValues)[number];
 export const propStatusValues = ['active', 'voided'] as const;
 export type PropStatus = (typeof propStatusValues)[number];
 
-// Participant status enum values
-export const participantStatusValues = ['active', 'removed'] as const;
-export type ParticipantStatus = (typeof participantStatusValues)[number];
+// Player status enum values
+export const playerStatusValues = ['active', 'removed'] as const;
+export type PlayerStatus = (typeof playerStatusValues)[number];
 
 // ============================================
 // POOLS TABLE
@@ -50,22 +50,22 @@ export const props = sqliteTable('props', {
 ]);
 
 // ============================================
-// PARTICIPANTS TABLE
+// PLAYERS TABLE
 // ============================================
-export const participants = sqliteTable('participants', {
+export const players = sqliteTable('players', {
   id: text('id').primaryKey(),
   poolId: text('pool_id').notNull().references(() => pools.id),
   name: text('name').notNull(),
   secret: text('secret').notNull(),
   totalPoints: integer('total_points').notNull().default(0),
   paid: integer('paid', { mode: 'boolean' }),
-  status: text('status', { enum: participantStatusValues }).notNull().default('active'),
+  status: text('status', { enum: playerStatusValues }).notNull().default('active'),
   joinedAt: text('joined_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 }, (table) => [
-  uniqueIndex('idx_participants_pool_name').on(table.poolId, table.name),
-  index('idx_participants_pool').on(table.poolId),
-  index('idx_participants_pool_secret').on(table.poolId, table.secret),
+  uniqueIndex('idx_players_pool_name').on(table.poolId, table.name),
+  index('idx_players_pool').on(table.poolId),
+  index('idx_players_pool_secret').on(table.poolId, table.secret),
 ]);
 
 // ============================================
@@ -73,15 +73,15 @@ export const participants = sqliteTable('participants', {
 // ============================================
 export const picks = sqliteTable('picks', {
   id: text('id').primaryKey(),
-  participantId: text('participant_id').notNull().references(() => participants.id),
+  playerId: text('player_id').notNull().references(() => players.id),
   propId: text('prop_id').notNull().references(() => props.id),
   selectedOptionIndex: integer('selected_option_index').notNull(),
   pointsEarned: integer('points_earned'),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 }, (table) => [
-  uniqueIndex('idx_picks_participant_prop').on(table.participantId, table.propId),
-  index('idx_picks_participant').on(table.participantId),
+  uniqueIndex('idx_picks_player_prop').on(table.playerId, table.propId),
+  index('idx_picks_player').on(table.playerId),
   index('idx_picks_prop').on(table.propId),
 ]);
 
@@ -90,7 +90,7 @@ export const picks = sqliteTable('picks', {
 // ============================================
 export const poolsRelations = relations(pools, ({ many }) => ({
   props: many(props),
-  participants: many(participants),
+  players: many(players),
 }));
 
 export const propsRelations = relations(props, ({ one, many }) => ({
@@ -101,18 +101,18 @@ export const propsRelations = relations(props, ({ one, many }) => ({
   picks: many(picks),
 }));
 
-export const participantsRelations = relations(participants, ({ one, many }) => ({
+export const playersRelations = relations(players, ({ one, many }) => ({
   pool: one(pools, {
-    fields: [participants.poolId],
+    fields: [players.poolId],
     references: [pools.id],
   }),
   picks: many(picks),
 }));
 
 export const picksRelations = relations(picks, ({ one }) => ({
-  participant: one(participants, {
-    fields: [picks.participantId],
-    references: [participants.id],
+  player: one(players, {
+    fields: [picks.playerId],
+    references: [players.id],
   }),
   prop: one(props, {
     fields: [picks.propId],
@@ -129,8 +129,8 @@ export type NewPool = typeof pools.$inferInsert;
 export type Prop = typeof props.$inferSelect;
 export type NewProp = typeof props.$inferInsert;
 
-export type Participant = typeof participants.$inferSelect;
-export type NewParticipant = typeof participants.$inferInsert;
+export type Player = typeof players.$inferSelect;
+export type NewPlayer = typeof players.$inferInsert;
 
 export type Pick = typeof picks.$inferSelect;
 export type NewPick = typeof picks.$inferInsert;

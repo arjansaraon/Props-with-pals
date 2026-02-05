@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pools, participants } from '@/src/lib/schema';
+import { pools, players } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
 import { JoinPoolSchema } from '@/src/lib/validators';
 import { jsonResponseWithAuth, requireValidOrigin } from '@/src/lib/auth';
@@ -56,12 +56,12 @@ export async function joinPoolHandler(
     const { name } = parseResult.data;
 
     // Create the participant (rely on unique constraint for duplicate detection)
-    const participantId = crypto.randomUUID();
+    const playerId = crypto.randomUUID();
     const participantSecret = crypto.randomUUID();
     const now = new Date().toISOString();
 
-    await database.insert(participants).values({
-      id: participantId,
+    await database.insert(players).values({
+      id: playerId,
       poolId: pool.id,
       name,
       secret: participantSecret,
@@ -75,7 +75,7 @@ export async function joinPoolHandler(
     // Return participant with auth cookie set (secret is in httpOnly cookie, not response body)
     return jsonResponseWithAuth(
       {
-        id: participantId,
+        id: playerId,
         poolId: pool.id,
         name,
         totalPoints: 0,

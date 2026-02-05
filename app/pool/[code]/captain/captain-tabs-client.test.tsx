@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { CaptainTabsClient } from './captain-tabs-client';
 import {
   createMockProp,
-  createMockParticipant,
+  createMockPlayer,
   defaultComponentProps,
   createPropsWithStatus,
   createPropsWithData,
@@ -87,7 +87,7 @@ describe('CaptainTabsClient', () => {
 
     it('switches to Players tab when clicked', async () => {
       const user = userEvent.setup();
-      mockFetch.mockResolvedValueOnce(mockFetchResponse({ participants: [] }));
+      mockFetch.mockResolvedValueOnce(mockFetchResponse({ players: [] }));
 
       render(<CaptainTabsClient {...defaultComponentProps} />);
 
@@ -98,7 +98,7 @@ describe('CaptainTabsClient', () => {
 
     it('switches back to Admin tab when clicked', async () => {
       const user = userEvent.setup();
-      mockFetch.mockResolvedValueOnce(mockFetchResponse({ participants: [] }));
+      mockFetch.mockResolvedValueOnce(mockFetchResponse({ players: [] }));
 
       render(<CaptainTabsClient {...defaultComponentProps} />);
 
@@ -114,143 +114,256 @@ describe('CaptainTabsClient', () => {
   // ===================
   describe('Admin Tab', () => {
     describe('pool status actions', () => {
-      it('shows "Lock Pool" button when pool status is open', () => {
-        render(<CaptainTabsClient {...createPropsWithStatus('open', { propsList: [createMockProp()] })} />);
+      describe('status badge display', () => {
+        it('shows "Open" status badge when pool is open', () => {
+          render(<CaptainTabsClient {...createPropsWithStatus('open', { propsList: [createMockProp()] })} />);
 
-        expect(screen.getByRole('button', { name: /lock pool/i })).toBeInTheDocument();
+          expect(screen.getByText('Open')).toBeInTheDocument();
+        });
+
+        it('shows "Locked" status badge when pool is locked', () => {
+          render(<CaptainTabsClient {...createPropsWithStatus('locked', { propsList: [createMockProp()] })} />);
+
+          expect(screen.getByText('Locked')).toBeInTheDocument();
+        });
+
+        it('shows "Completed" status badge when pool is completed', () => {
+          render(<CaptainTabsClient {...createPropsWithStatus('completed', { propsList: [createMockProp()] })} />);
+
+          expect(screen.getByText('Completed')).toBeInTheDocument();
+        });
+
+        it('status badge and action button appear in the same row', () => {
+          render(<CaptainTabsClient {...createPropsWithStatus('open', { propsList: [createMockProp()] })} />);
+
+          const statusRow = screen.getByTestId('pool-status-row');
+          expect(within(statusRow).getByText('Open')).toBeInTheDocument();
+          expect(within(statusRow).getByRole('button', { name: /lock pool/i })).toBeInTheDocument();
+        });
       });
 
-      it('hides lock button when pool is locked', () => {
-        render(<CaptainTabsClient {...createPropsWithStatus('locked', { propsList: [createMockProp()] })} />);
+      describe('action buttons', () => {
+        it('shows "Lock Pool" button when pool status is open', () => {
+          render(<CaptainTabsClient {...createPropsWithStatus('open', { propsList: [createMockProp()] })} />);
 
-        expect(screen.queryByRole('button', { name: /lock pool/i })).not.toBeInTheDocument();
+          expect(screen.getByRole('button', { name: /lock pool/i })).toBeInTheDocument();
+        });
+
+        it('shows "Complete Pool" button when pool is locked', () => {
+          render(<CaptainTabsClient {...createPropsWithStatus('locked', { propsList: [createMockProp()] })} />);
+
+          expect(screen.getByRole('button', { name: /complete pool/i })).toBeInTheDocument();
+        });
+
+        it('hides action buttons when pool is completed', () => {
+          render(<CaptainTabsClient {...createPropsWithStatus('completed', { propsList: [createMockProp()] })} />);
+
+          expect(screen.queryByRole('button', { name: /lock pool/i })).not.toBeInTheDocument();
+          expect(screen.queryByRole('button', { name: /complete pool/i })).not.toBeInTheDocument();
+        });
       });
     });
 
     describe('add prop form', () => {
-      it('renders form when pool is open', () => {
-        render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+      describe('collapsible behavior', () => {
+        it('shows "Add Prop" button when form is collapsed (default state)', () => {
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-        expect(screen.getByText('Add New Prop')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText(/who will score/i)).toBeInTheDocument();
+          expect(screen.getByRole('button', { name: /^\+ add prop$/i })).toBeInTheDocument();
+          expect(screen.queryByPlaceholderText(/who will score/i)).not.toBeInTheDocument();
+        });
+
+        it('expands form when "Add Prop" button is clicked', async () => {
+          const user = userEvent.setup();
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+
+          expect(screen.getByText('Add New Prop')).toBeInTheDocument();
+          expect(screen.getByPlaceholderText(/who will score/i)).toBeInTheDocument();
+        });
+
+        it('collapses form after successful submission', async () => {
+          const user = userEvent.setup();
+          mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+
+          // Open form
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+
+          // Fill and submit
+          await user.type(screen.getByPlaceholderText(/who will score/i), 'Test?');
+          await user.type(screen.getByPlaceholderText('Option 1'), 'A');
+          await user.type(screen.getByPlaceholderText('Option 2'), 'B');
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
+
+          await waitFor(() => {
+            expect(screen.queryByPlaceholderText(/who will score/i)).not.toBeInTheDocument();
+          });
+          expect(screen.getByRole('button', { name: /^\+ add prop$/i })).toBeInTheDocument();
+        });
+
+        it('hides add prop button when pool is locked', () => {
+          render(<CaptainTabsClient {...createPropsWithStatus('locked')} />);
+
+          expect(screen.queryByRole('button', { name: /^\+ add prop$/i })).not.toBeInTheDocument();
+          expect(screen.queryByText('Add New Prop')).not.toBeInTheDocument();
+        });
       });
 
-      it('hides form when pool is locked', () => {
-        render(<CaptainTabsClient {...createPropsWithStatus('locked')} />);
+      describe('form inputs', () => {
+        it('shows two option inputs by default', async () => {
+          const user = userEvent.setup();
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-        expect(screen.queryByText('Add New Prop')).not.toBeInTheDocument();
-      });
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
 
-      it('shows two option inputs by default', () => {
-        render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+          expect(screen.getByPlaceholderText('Option 1')).toBeInTheDocument();
+          expect(screen.getByPlaceholderText('Option 2')).toBeInTheDocument();
+        });
 
-        expect(screen.getByPlaceholderText('Option 1')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('Option 2')).toBeInTheDocument();
-      });
+        it('allows adding more options', async () => {
+          const user = userEvent.setup();
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-      it('allows adding more options', async () => {
-        const user = userEvent.setup();
-        render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /add option/i }));
 
-        await user.click(screen.getByRole('button', { name: /add option/i }));
+          expect(screen.getByPlaceholderText('Option 3')).toBeInTheDocument();
+        });
 
-        expect(screen.getByPlaceholderText('Option 3')).toBeInTheDocument();
-      });
+        it('allows removing options when more than 2 exist', async () => {
+          const user = userEvent.setup();
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-      it('allows removing options when more than 2 exist', async () => {
-        const user = userEvent.setup();
-        render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
 
-        // Add a third option first
-        await user.click(screen.getByRole('button', { name: /add option/i }));
-        expect(screen.getByPlaceholderText('Option 3')).toBeInTheDocument();
+          // Add a third option first
+          await user.click(screen.getByRole('button', { name: /add option/i }));
+          expect(screen.getByPlaceholderText('Option 3')).toBeInTheDocument();
 
-        // Now remove buttons should be visible
-        const removeButtons = screen.getAllByRole('button').filter(btn =>
-          btn.querySelector('svg.lucide-trash-2')
-        );
-        expect(removeButtons.length).toBeGreaterThan(0);
-      });
-
-      it('shows point value input defaulting to 10', () => {
-        render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
-
-        const pointInput = screen.getByDisplayValue('10');
-        expect(pointInput).toBeInTheDocument();
-      });
-
-      it('submits form with correct payload', async () => {
-        const user = userEvent.setup();
-        mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
-
-        render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
-
-        await user.type(screen.getByPlaceholderText(/who will score/i), 'Test Question?');
-        await user.type(screen.getByPlaceholderText('Option 1'), 'Option A');
-        await user.type(screen.getByPlaceholderText('Option 2'), 'Option B');
-        await user.click(screen.getByRole('button', { name: /^add prop$/i }));
-
-        await waitFor(() => {
-          expect(mockFetch).toHaveBeenCalledWith(
-            '/api/pools/ABC123/props',
-            expect.objectContaining({
-              method: 'POST',
-              body: JSON.stringify({
-                questionText: 'Test Question?',
-                options: ['Option A', 'Option B'],
-                pointValue: 10,
-              }),
-            })
+          // Now remove buttons should be visible
+          const removeButtons = screen.getAllByRole('button').filter(btn =>
+            btn.querySelector('svg.lucide-trash-2')
           );
+          expect(removeButtons.length).toBeGreaterThan(0);
+        });
+
+        it('shows point value input defaulting to 10', async () => {
+          const user = userEvent.setup();
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+
+          const pointInput = screen.getByDisplayValue('10');
+          expect(pointInput).toBeInTheDocument();
         });
       });
 
-      it('clears form on successful submission', async () => {
-        const user = userEvent.setup();
-        mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
+      describe('form submission', () => {
+        it('submits form with correct payload', async () => {
+          const user = userEvent.setup();
+          mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
 
-        render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-        const questionInput = screen.getByPlaceholderText(/who will score/i);
-        await user.type(questionInput, 'Test Question?');
-        await user.type(screen.getByPlaceholderText('Option 1'), 'Option A');
-        await user.type(screen.getByPlaceholderText('Option 2'), 'Option B');
-        await user.click(screen.getByRole('button', { name: /^add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.type(screen.getByPlaceholderText(/who will score/i), 'Test Question?');
+          await user.type(screen.getByPlaceholderText('Option 1'), 'Option A');
+          await user.type(screen.getByPlaceholderText('Option 2'), 'Option B');
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
 
-        await waitFor(() => {
-          expect(questionInput).toHaveValue('');
+          await waitFor(() => {
+            expect(mockFetch).toHaveBeenCalledWith(
+              '/api/pools/ABC123/props',
+              expect.objectContaining({
+                method: 'POST',
+                body: JSON.stringify({
+                  questionText: 'Test Question?',
+                  options: ['Option A', 'Option B'],
+                  pointValue: 10,
+                }),
+              })
+            );
+          });
         });
-      });
 
-      it('shows success toast on successful submission', async () => {
-        const user = userEvent.setup();
-        mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
+        it('clears form on successful submission', async () => {
+          const user = userEvent.setup();
+          mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
+          mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
 
-        render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-        await user.type(screen.getByPlaceholderText(/who will score/i), 'Test Question?');
-        await user.type(screen.getByPlaceholderText('Option 1'), 'Option A');
-        await user.type(screen.getByPlaceholderText('Option 2'), 'Option B');
-        await user.click(screen.getByRole('button', { name: /^add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
 
-        await waitFor(() => {
-          expect(mockShowToast).toHaveBeenCalledWith('Prop added successfully', 'success');
+          const questionInput = screen.getByPlaceholderText(/who will score/i);
+          await user.type(questionInput, 'Test Question?');
+          await user.type(screen.getByPlaceholderText('Option 1'), 'Option A');
+          await user.type(screen.getByPlaceholderText('Option 2'), 'Option B');
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
+
+          // Form collapses, reopen to verify it's cleared
+          await waitFor(() => {
+            expect(screen.queryByPlaceholderText(/who will score/i)).not.toBeInTheDocument();
+          });
+
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          expect(screen.getByPlaceholderText(/who will score/i)).toHaveValue('');
         });
-      });
 
-      it('shows error message on failed submission', async () => {
-        const user = userEvent.setup();
-        mockFetch.mockResolvedValueOnce(mockFetchResponse({ message: 'Invalid prop' }, false, 400));
+        it('shows success toast on successful submission', async () => {
+          const user = userEvent.setup();
+          mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
 
-        render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
-        await user.type(screen.getByPlaceholderText(/who will score/i), 'Test');
-        await user.type(screen.getByPlaceholderText('Option 1'), 'A');
-        await user.type(screen.getByPlaceholderText('Option 2'), 'B');
-        await user.click(screen.getByRole('button', { name: /^add prop$/i }));
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.type(screen.getByPlaceholderText(/who will score/i), 'Test Question?');
+          await user.type(screen.getByPlaceholderText('Option 1'), 'Option A');
+          await user.type(screen.getByPlaceholderText('Option 2'), 'Option B');
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
 
-        await waitFor(() => {
-          expect(screen.getByText('Invalid prop')).toBeInTheDocument();
+          await waitFor(() => {
+            expect(mockShowToast).toHaveBeenCalledWith('Prop added successfully', 'success');
+          });
+        });
+
+        it('shows error message on failed submission', async () => {
+          const user = userEvent.setup();
+          mockFetch.mockResolvedValueOnce(mockFetchResponse({ message: 'Invalid prop' }, false, 400));
+
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.type(screen.getByPlaceholderText(/who will score/i), 'Test');
+          await user.type(screen.getByPlaceholderText('Option 1'), 'A');
+          await user.type(screen.getByPlaceholderText('Option 2'), 'B');
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
+
+          await waitFor(() => {
+            expect(screen.getByText('Invalid prop')).toBeInTheDocument();
+          });
+        });
+
+        it('keeps form open on failed submission', async () => {
+          const user = userEvent.setup();
+          mockFetch.mockResolvedValueOnce(mockFetchResponse({ message: 'Invalid prop' }, false, 400));
+
+          render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+
+          await user.click(screen.getByRole('button', { name: /^\+ add prop$/i }));
+          await user.type(screen.getByPlaceholderText(/who will score/i), 'Test');
+          await user.type(screen.getByPlaceholderText('Option 1'), 'A');
+          await user.type(screen.getByPlaceholderText('Option 2'), 'B');
+          await user.click(screen.getByRole('button', { name: /^add prop$/i }));
+
+          await waitFor(() => {
+            expect(screen.getByText('Invalid prop')).toBeInTheDocument();
+          });
+
+          // Form should still be visible
+          expect(screen.getByPlaceholderText(/who will score/i)).toBeInTheDocument();
         });
       });
     });
@@ -273,6 +386,16 @@ describe('CaptainTabsClient', () => {
         render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
 
         expect(screen.getByText(/no props yet/i)).toBeInTheDocument();
+      });
+
+      it('shows "No props" warning above Add Prop button', () => {
+        render(<CaptainTabsClient {...createPropsWithStatus('open')} />);
+
+        const warning = screen.getByText(/no props yet/i);
+        const addButton = screen.getByRole('button', { name: /^\+ add prop$/i });
+
+        // Warning should come before button in DOM (DOCUMENT_POSITION_FOLLOWING = 4)
+        expect(warning.compareDocumentPosition(addButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       });
 
       it('shows resolve buttons on locked pool for unresolved props', () => {
@@ -624,7 +747,7 @@ describe('CaptainTabsClient', () => {
 
         await user.click(screen.getByRole('tab', { name: 'My Picks' }));
 
-        expect(screen.getByText(/1 of 2 props answered/i)).toBeInTheDocument();
+        expect(screen.getByText(/1 of 2 answered/i)).toBeInTheDocument();
       });
 
       it('hides progress when pool is not open', async () => {
@@ -639,10 +762,10 @@ describe('CaptainTabsClient', () => {
 
         await user.click(screen.getByRole('tab', { name: 'My Picks' }));
 
-        expect(screen.queryByText(/props answered/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/of \d+ answered/i)).not.toBeInTheDocument();
       });
 
-      it('shows "All picks submitted" when complete', async () => {
+      it('shows "All picks completed" when complete', async () => {
         const user = userEvent.setup();
         render(
           <CaptainTabsClient
@@ -655,7 +778,7 @@ describe('CaptainTabsClient', () => {
 
         await user.click(screen.getByRole('tab', { name: 'My Picks' }));
 
-        expect(screen.getByText(/all picks submitted/i)).toBeInTheDocument();
+        expect(screen.getByText(/all picks completed/i)).toBeInTheDocument();
       });
     });
   });
@@ -669,14 +792,14 @@ describe('CaptainTabsClient', () => {
         render(<CaptainTabsClient {...defaultComponentProps} />);
 
         expect(mockFetch).not.toHaveBeenCalledWith(
-          expect.stringContaining('/participants'),
+          expect.stringContaining('/players'),
           expect.anything()
         );
       });
 
       it('loads participants when tab is selected', async () => {
         const user = userEvent.setup();
-        mockFetch.mockResolvedValueOnce(mockFetchResponse({ participants: [] }));
+        mockFetch.mockResolvedValueOnce(mockFetchResponse({ players: [] }));
 
         render(<CaptainTabsClient {...defaultComponentProps} />);
 
@@ -684,7 +807,7 @@ describe('CaptainTabsClient', () => {
 
         await waitFor(() => {
           expect(mockFetch).toHaveBeenCalledWith(
-            '/api/pools/ABC123/participants',
+            '/api/pools/ABC123/players',
             expect.objectContaining({ credentials: 'include' })
           );
         });
@@ -693,7 +816,7 @@ describe('CaptainTabsClient', () => {
       it('shows loading spinner while fetching', async () => {
         const user = userEvent.setup();
         mockFetch.mockImplementationOnce(
-          () => new Promise((resolve) => setTimeout(() => resolve(mockFetchResponse({ participants: [] })), 100))
+          () => new Promise((resolve) => setTimeout(() => resolve(mockFetchResponse({ players: [] })), 100))
         );
 
         render(<CaptainTabsClient {...defaultComponentProps} />);
@@ -705,7 +828,7 @@ describe('CaptainTabsClient', () => {
 
       it('does not refetch when already loaded', async () => {
         const user = userEvent.setup();
-        mockFetch.mockResolvedValueOnce(mockFetchResponse({ participants: [] }));
+        mockFetch.mockResolvedValueOnce(mockFetchResponse({ players: [] }));
 
         render(<CaptainTabsClient {...defaultComponentProps} />);
 
@@ -719,25 +842,25 @@ describe('CaptainTabsClient', () => {
       });
     });
 
-    describe('participants list', () => {
-      it('shows "No participants" when list is empty', async () => {
+    describe('players list', () => {
+      it('shows "No players" when list is empty', async () => {
         const user = userEvent.setup();
-        mockFetch.mockResolvedValueOnce(mockFetchResponse({ participants: [] }));
+        mockFetch.mockResolvedValueOnce(mockFetchResponse({ players: [] }));
 
         render(<CaptainTabsClient {...defaultComponentProps} />);
 
         await user.click(screen.getByRole('tab', { name: 'Players' }));
 
         await waitFor(() => {
-          expect(screen.getByText(/no participants have joined/i)).toBeInTheDocument();
+          expect(screen.getByText(/no players have joined/i)).toBeInTheDocument();
         });
       });
 
-      it('renders participant names and points', async () => {
+      it('renders player names and points', async () => {
         const user = userEvent.setup();
         mockFetch.mockResolvedValueOnce(
           mockFetchResponse({
-            participants: [createMockParticipant({ name: 'John Doe', totalPoints: 50 })],
+            players: [createMockPlayer({ name: 'John Doe', totalPoints: 50 })],
           })
         );
 
@@ -751,11 +874,11 @@ describe('CaptainTabsClient', () => {
         });
       });
 
-      it('shows Captain badge for captain participant', async () => {
+      it('shows Captain badge for captain player', async () => {
         const user = userEvent.setup();
         mockFetch.mockResolvedValueOnce(
           mockFetchResponse({
-            participants: [createMockParticipant({ name: 'Captain Jane', isCaptain: true })],
+            players: [createMockPlayer({ name: 'Captain Jane', isCaptain: true })],
           })
         );
 

@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
 import { AlertCircle } from 'lucide-react';
 import type { CaptainTabsClientProps } from './types';
-import { useParticipants, useAddPropForm, useAdminActions } from './hooks';
+import { usePlayers, useAddPropForm, useAdminActions } from './hooks';
 import { AdminTab, PicksTab, PlayersTab } from './components';
 
 export function CaptainTabsClient({
@@ -35,7 +35,7 @@ export function CaptainTabsClient({
   });
 
   // Players state (via hook)
-  const { participants, isLoading: isLoadingParticipants } = useParticipants({
+  const { players, isLoading: isLoadingPlayers } = usePlayers({
     code,
     shouldLoad: activeTab === 'players',
   });
@@ -76,8 +76,8 @@ export function CaptainTabsClient({
         <TabsContent value="players">
           <PlayersTab
             code={code}
-            participants={participants}
-            isLoading={isLoadingParticipants}
+            players={players}
+            isLoading={isLoadingPlayers}
           />
         </TabsContent>
       </Tabs>

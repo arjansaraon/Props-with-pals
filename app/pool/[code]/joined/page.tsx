@@ -1,5 +1,5 @@
 import { db } from '@/src/lib/db';
-import { pools, participants } from '@/src/lib/schema';
+import { pools, players } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import Link from 'next/link';
 import { CopyLinkButton } from '@/app/components/copy-link-button';
@@ -57,8 +57,8 @@ export default async function JoinedConfirmation({
   if (secret) {
     const participantResult = await db
       .select()
-      .from(participants)
-      .where(and(eq(participants.poolId, pool.id), eq(participants.secret, secret)))
+      .from(players)
+      .where(and(eq(players.poolId, pool.id), eq(players.secret, secret)))
       .limit(1);
 
     if (participantResult.length > 0) {

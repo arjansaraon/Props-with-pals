@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb } from '@/src/lib/test-db';
-import { pools, participants } from '@/src/lib/schema';
+import { pools, players } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
 import { createPoolHandler, type Database } from './route';
 
@@ -120,7 +120,7 @@ describe('POST /api/pools', () => {
     });
   });
 
-  describe('Captain as Participant', () => {
+  describe('Captain as Player', () => {
     it('creates participant record for captain', async () => {
       const response = await createPoolHandler(
         createRequest({ name: 'Test Pool', captainName: 'Captain Jane' }),
@@ -132,8 +132,8 @@ describe('POST /api/pools', () => {
       // Verify participant was created
       const participantList = await db
         .select()
-        .from(participants)
-        .where(eq(participants.poolId, data.id));
+        .from(players)
+        .where(eq(players.poolId, data.id));
 
       expect(participantList).toHaveLength(1);
       expect(participantList[0].name).toBe('Captain Jane');
@@ -151,8 +151,8 @@ describe('POST /api/pools', () => {
       const poolList = await db.select().from(pools).where(eq(pools.id, data.id));
       const participantList = await db
         .select()
-        .from(participants)
-        .where(eq(participants.poolId, data.id));
+        .from(players)
+        .where(eq(players.poolId, data.id));
 
       // Verify captain participant secret matches pool's captainSecret
       expect(participantList[0].secret).toBe(poolList[0].captainSecret);
@@ -168,8 +168,8 @@ describe('POST /api/pools', () => {
 
       const participantList = await db
         .select()
-        .from(participants)
-        .where(eq(participants.poolId, data.id));
+        .from(players)
+        .where(eq(players.poolId, data.id));
 
       expect(participantList[0].totalPoints).toBe(0);
     });
@@ -184,8 +184,8 @@ describe('POST /api/pools', () => {
 
       const participantList = await db
         .select()
-        .from(participants)
-        .where(eq(participants.poolId, data.id));
+        .from(players)
+        .where(eq(players.poolId, data.id));
 
       expect(participantList[0].status).toBe('active');
     });

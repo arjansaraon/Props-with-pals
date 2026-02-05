@@ -1,14 +1,17 @@
 import { db } from '@/src/lib/db';
-import { pools, props, participants, picks } from '@/src/lib/schema';
+import { pools, props, players, picks } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { CaptainTabsClient } from './captain-tabs-client';
 import { getPoolSecret } from '@/src/lib/auth';
+import { CopyLinkButton } from '@/app/components/copy-link-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
 import { Button } from '@/app/components/ui/button';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/app/components/ui/tooltip';
+import { AlertTriangle, HelpCircle } from 'lucide-react';
 
 export default async function CaptainDashboard({
   params,
@@ -19,6 +22,11 @@ export default async function CaptainDashboard({
 }) {
   const { code } = await params;
   const { secret: querySecret } = await searchParams;
+
+  // Get host for building captain link
+  const headersList = await headers();
+  const host = headersList.get('host') || 'localhost:3000';
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
 
   // Get secret from cookie (preferred) or query param (fallback for migration)
   const cookieSecret = await getPoolSecret(code);
@@ -71,15 +79,15 @@ export default async function CaptainDashboard({
   let myPicks: { propId: string; selectedOptionIndex: number }[] = [];
   const participantResult = await db
     .select()
-    .from(participants)
-    .where(and(eq(participants.poolId, pool.id), eq(participants.secret, secret)))
+    .from(players)
+    .where(and(eq(players.poolId, pool.id), eq(players.secret, secret)))
     .limit(1);
 
   if (participantResult.length > 0) {
     const picksResult = await db
       .select()
       .from(picks)
-      .where(eq(picks.participantId, participantResult[0].id));
+      .where(eq(picks.playerId, participantResult[0].id));
 
     myPicks = picksResult.map((p) => ({
       propId: p.propId,
@@ -96,22 +104,53 @@ export default async function CaptainDashboard({
         <Card className="shadow-lg mb-6">
           <CardHeader>
             <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-2xl">{pool.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Captain: {pool.captainName}
-                </p>
-              </div>
+              <CardTitle className="text-2xl">{pool.name}</CardTitle>
               <Badge variant={statusVariant}>
                 {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
               </Badge>
             </div>
+            {/* Inline Details Row */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mt-2">
+              <span>
+                Captain: <strong className="text-foreground">{pool.captainName}</strong>
+              </span>
+              {pool.buyInAmount && (
+                <>
+                  <span className="text-muted-foreground/50">•</span>
+                  <span>
+                    Buy-in: <strong className="text-foreground">{pool.buyInAmount}</strong>
+                  </span>
+                </>
+              )}
+              <span className="text-muted-foreground/50">•</span>
+              <span>Created: {new Date(pool.createdAt).toLocaleDateString()}</span>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="bg-muted rounded-lg p-4 mb-4">
-              <p className="text-sm text-muted-foreground mb-1">
-                Invite Code
-              </p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-sm text-muted-foreground">
+                  Invite Code
+                </p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="text-muted-foreground hover:text-foreground transition-colors">
+                        <HelpCircle className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs p-3">
+                      <p className="font-medium mb-2">Captain Instructions</p>
+                      <ol className="list-decimal list-inside space-y-1 text-sm">
+                        <li>Share the invite code with friends</li>
+                        <li>Add props while the pool is open</li>
+                        <li>Lock the pool when ready</li>
+                        <li>Mark correct answers after the event</li>
+                      </ol>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <p className="text-2xl font-mono font-bold text-foreground">
                 {pool.inviteCode}
               </p>
@@ -120,17 +159,14 @@ export default async function CaptainDashboard({
               </p>
             </div>
 
-            {pool.buyInAmount && (
-              <p className="text-sm text-muted-foreground mb-4">
-                Buy-in: {pool.buyInAmount}
-              </p>
-            )}
-
-            <Button variant="secondary" asChild>
-              <Link href={`/pool/${code}/leaderboard`}>
-                View Leaderboard
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <CopyLinkButton url={`${protocol}://${host}/pool/${code}/captain?secret=${secret}`} />
+              <Button variant="secondary" asChild>
+                <Link href={`/pool/${code}/leaderboard`}>
+                  View Leaderboard
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -151,26 +187,13 @@ export default async function CaptainDashboard({
           secret={secret}
         />
 
-        {/* Instructions */}
-        <Card className="shadow-lg mt-6">
-          <CardHeader>
-            <CardTitle>Captain Instructions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-              <li>Share the invite code with friends to join</li>
-              <li>Add props (questions) while the pool is open</li>
-              <li>Lock the pool when everyone has joined and picks are in</li>
-              <li>After the event, mark correct answers to calculate scores</li>
-            </ol>
-            <Alert className="mt-4 border-amber-200 bg-amber-50">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-800">
-                <strong>Important:</strong> Save this URL! You need it to manage your pool.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
+        {/* Save URL Reminder */}
+        <Alert className="mt-6 border-amber-200 bg-amber-50">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            <strong>Important:</strong> Save this URL! You need it to manage your pool.
+          </AlertDescription>
+        </Alert>
       </main>
     </div>
   );

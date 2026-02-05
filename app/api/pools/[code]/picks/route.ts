@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pools, participants, props, picks } from '@/src/lib/schema';
+import { pools, players, props, picks } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { SubmitPickSchema } from '@/src/lib/validators';
 import { getSecret, requireValidOrigin } from '@/src/lib/auth';
@@ -57,11 +57,11 @@ export async function submitPickHandler(
     // Find participant by secret
     const participantResult = await database
       .select()
-      .from(participants)
+      .from(players)
       .where(
         and(
-          eq(participants.poolId, pool.id),
-          eq(participants.secret, secret)
+          eq(players.poolId, pool.id),
+          eq(players.secret, secret)
         )
       )
       .limit(1);
@@ -124,7 +124,7 @@ export async function submitPickHandler(
       .from(picks)
       .where(
         and(
-          eq(picks.participantId, participant.id),
+          eq(picks.playerId, participant.id),
           eq(picks.propId, propId)
         )
       )
@@ -145,7 +145,7 @@ export async function submitPickHandler(
       return NextResponse.json(
         {
           id: existingPick[0].id,
-          participantId: participant.id,
+          playerId: participant.id,
           propId,
           selectedOptionIndex,
           updatedAt: now,
@@ -158,7 +158,7 @@ export async function submitPickHandler(
 
       await database.insert(picks).values({
         id: pickId,
-        participantId: participant.id,
+        playerId: participant.id,
         propId,
         selectedOptionIndex,
         pointsEarned: null,
@@ -169,7 +169,7 @@ export async function submitPickHandler(
       return NextResponse.json(
         {
           id: pickId,
-          participantId: participant.id,
+          playerId: participant.id,
           propId,
           selectedOptionIndex,
           createdAt: now,

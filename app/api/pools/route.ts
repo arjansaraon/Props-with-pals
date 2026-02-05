@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pools, participants } from '@/src/lib/schema';
+import { pools, players } from '@/src/lib/schema';
 import { CreatePoolSchema } from '@/src/lib/validators';
 import { generateInviteCode } from '@/src/lib/invite-code';
 import { jsonResponseWithAuth, requireValidOrigin } from '@/src/lib/auth';
@@ -34,7 +34,7 @@ export async function createPoolHandler(
     const poolId = crypto.randomUUID();
     const inviteCode = generateInviteCode();
     const captainSecret = crypto.randomUUID();
-    const participantId = crypto.randomUUID();
+    const playerId = crypto.randomUUID();
     const now = new Date().toISOString();
 
     // Create pool and captain participant in a transaction
@@ -54,8 +54,8 @@ export async function createPoolHandler(
       });
 
       // Insert captain as participant (using same secret)
-      await tx.insert(participants).values({
-        id: participantId,
+      await tx.insert(players).values({
+        id: playerId,
         poolId,
         name: captainName,
         secret: captainSecret,

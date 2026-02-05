@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { pools, participants } from '@/src/lib/schema';
+import { pools, players } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { safeCompareSecrets } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
@@ -9,7 +9,7 @@ export type Database = LibSQLDatabase<typeof schema>;
 
 // Type for pool from database
 export type Pool = typeof pools.$inferSelect;
-export type Participant = typeof participants.$inferSelect;
+export type Player = typeof players.$inferSelect;
 
 /**
  * Error responses for API routes
@@ -104,15 +104,15 @@ export function validateCaptainSecret(
  * Finds a participant by pool ID and secret.
  * Returns null if not found.
  */
-export async function findParticipantBySecret(
+export async function findPlayerBySecret(
   database: Database,
   poolId: string,
   secret: string
-): Promise<Participant | null> {
+): Promise<Player | null> {
   const result = await database
     .select()
-    .from(participants)
-    .where(and(eq(participants.poolId, poolId), eq(participants.secret, secret)))
+    .from(players)
+    .where(and(eq(players.poolId, poolId), eq(players.secret, secret)))
     .limit(1);
 
   return result.length > 0 ? result[0] : null;

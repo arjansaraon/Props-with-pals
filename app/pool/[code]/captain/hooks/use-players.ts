@@ -1,40 +1,40 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Participant } from '../types';
+import type { Player } from '../types';
 
-interface UseParticipantsProps {
+interface UsePlayersProps {
   code: string;
   shouldLoad: boolean;
 }
 
-interface UseParticipantsReturn {
-  participants: Participant[];
+interface UsePlayersReturn {
+  players: Player[];
   isLoading: boolean;
   isLoaded: boolean;
   reload: () => void;
 }
 
-export function useParticipants({ code, shouldLoad }: UseParticipantsProps): UseParticipantsReturn {
-  const [participants, setParticipants] = useState<Participant[]>([]);
+export function usePlayers({ code, shouldLoad }: UsePlayersProps): UsePlayersReturn {
+  const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     if (shouldLoad && !isLoaded) {
-      loadParticipants();
+      loadPlayers();
     }
   }, [shouldLoad, isLoaded]);
 
-  async function loadParticipants() {
+  async function loadPlayers() {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/pools/${code}/participants`, {
+      const response = await fetch(`/api/pools/${code}/players`, {
         credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
-        setParticipants(data.participants);
+        setPlayers(data.players);
         setIsLoaded(true);
       }
     } catch (err) {
@@ -49,7 +49,7 @@ export function useParticipants({ code, shouldLoad }: UseParticipantsProps): Use
   }
 
   return {
-    participants,
+    players,
     isLoading,
     isLoaded,
     reload,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useToast } from './use-toast';
+import { useToast } from '@/app/hooks/use-toast';
 
 interface InitialPick {
   propId: string;
@@ -40,7 +40,6 @@ export function usePicks({
   totalProps,
 }: UsePicksProps): UsePicksReturn {
   const { showToast } = useToast();
-
   const [myPicks, setMyPicks] = useState<Map<string, number>>(() => {
     const map = new Map<string, number>();
     initialPicks.forEach((p) => map.set(p.propId, p.selectedOptionIndex));
