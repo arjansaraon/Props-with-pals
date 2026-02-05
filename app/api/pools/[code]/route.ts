@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pools, props } from '@/src/lib/schema';
-import { eq, and, count } from 'drizzle-orm';
+import { pools } from '@/src/lib/schema';
+import { eq } from 'drizzle-orm';
 import { requireValidOrigin } from '@/src/lib/auth';
 import { UpdatePoolSchema } from '@/src/lib/validators';
 import {
@@ -13,7 +13,6 @@ export type { Database };
 
 /**
  * Gets a pool by invite code.
- * Draft pools are only visible to the captain.
  * Exported for testing with injected database.
  */
 export async function getPoolHandler(
@@ -22,7 +21,7 @@ export async function getPoolHandler(
   database: Database
 ): Promise<Response> {
   try {
-    // Get pool with auth check (draft pools hidden from non-captains)
+    // Get pool with auth check
     const result = await getPoolWithAuth(code, request, database);
     if (!result.success) {
       return result.response;
@@ -41,8 +40,8 @@ export async function getPoolHandler(
 /**
  * Updates pool details (name, description) or status transitions.
  * Requires captain_secret for authorization.
- * - name/description: Can edit in draft or open status
- * - status transitions: draft→open, open→locked
+ * - name/description: Can edit in open status
+ * - status transitions: open→locked, locked→completed
  * Exported for testing with injected database.
  */
 export async function updatePoolHandler(
@@ -75,7 +74,36 @@ export async function updatePoolHandler(
     const { name, description, status: targetStatus } = parseResult.data;
     const now = new Date().toISOString();
 
-    // Check if locked/completed pools can be edited
+    // Handle locked → completed transition (captain manually completes pool)
+    if (targetStatus === 'completed' && pool.status === 'locked') {
+      await database
+        .update(pools)
+        .set({ status: 'completed', updatedAt: now })
+        .where(eq(pools.id, pool.id));
+
+      return NextResponse.json(
+        { ...toPublicPool(pool), status: 'completed', updatedAt: now },
+        { status: 200 }
+      );
+    }
+
+    // Reject completing from non-locked status
+    if (targetStatus === 'completed' && pool.status !== 'locked') {
+      // Already completed
+      if (pool.status === 'completed') {
+        return NextResponse.json(
+          { code: 'POOL_LOCKED', message: 'Pool is already completed' },
+          { status: 400 }
+        );
+      }
+      // Open - must lock first
+      return NextResponse.json(
+        { code: 'INVALID_TRANSITION', message: 'Pool must be locked before completing' },
+        { status: 400 }
+      );
+    }
+
+    // Check if locked/completed pools can be edited (after handling valid locked transitions)
     if (pool.status === 'locked' || pool.status === 'completed') {
       return NextResponse.json(
         { code: 'POOL_LOCKED', message: 'Pool is already locked or completed' },
@@ -84,31 +112,6 @@ export async function updatePoolHandler(
     }
 
     // Handle status transitions
-    if (targetStatus === 'open' && pool.status === 'draft') {
-      // Validate: pool must have at least 1 prop (optimized COUNT query)
-      const [propCountResult] = await database
-        .select({ count: count() })
-        .from(props)
-        .where(and(eq(props.poolId, pool.id), eq(props.status, 'active')));
-
-      if (propCountResult.count === 0) {
-        return NextResponse.json(
-          { code: 'VALIDATION_ERROR', message: 'Add at least one prop before opening the pool' },
-          { status: 400 }
-        );
-      }
-
-      await database
-        .update(pools)
-        .set({ status: 'open', updatedAt: now })
-        .where(eq(pools.id, pool.id));
-
-      return NextResponse.json(
-        { ...toPublicPool(pool), status: 'open', updatedAt: now },
-        { status: 200 }
-      );
-    }
-
     if (targetStatus === 'locked' && pool.status === 'open') {
       await database
         .update(pools)
@@ -121,15 +124,7 @@ export async function updatePoolHandler(
       );
     }
 
-    // Invalid status transition
-    if (targetStatus && pool.status === 'draft' && targetStatus === 'locked') {
-      return NextResponse.json(
-        { code: 'INVALID_TRANSITION', message: 'Cannot lock a draft pool. Open it first.' },
-        { status: 400 }
-      );
-    }
-
-    // Handle editing name/description (allowed in draft and open)
+    // Handle editing name/description (allowed in open)
     if (name !== undefined || description !== undefined) {
       const updates: Partial<typeof pools.$inferInsert> = { updatedAt: now };
 
@@ -187,8 +182,8 @@ export async function GET(
  * PATCH /api/pools/[code]
  * Updates pool details or status (requires captain_secret)
  * - Body: { name?, description? } to edit details
- * - Body: { status: 'open' } to open a draft pool
  * - Body: { status: 'locked' } to lock an open pool
+ * - Body: { status: 'completed' } to complete a locked pool
  */
 export async function PATCH(
   request: NextRequest,

@@ -28,7 +28,7 @@ describe('POST /api/pools/[code]/props', () => {
   });
 
   // Helper to create a test pool
-  // Note: Props can only be added in 'draft' status
+  // Note: Props can only be added in 'open' status
   async function createTestPool(overrides: Partial<typeof pools.$inferInsert> = {}) {
     const now = new Date().toISOString();
     const poolData = {
@@ -37,7 +37,7 @@ describe('POST /api/pools/[code]/props', () => {
       inviteCode: 'PROP01',
       captainName: 'Captain',
       captainSecret: crypto.randomUUID(),
-      status: 'draft' as const,
+      status: 'open' as const,
       buyInAmount: null,
       createdAt: now,
       updatedAt: now,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { pools, props } from '@/src/lib/schema';
 import { eq, count } from 'drizzle-orm';
 import { CreatePropSchema } from '@/src/lib/validators';
-import { getSecret, requireValidOrigin } from '@/src/lib/auth';
+import { getSecret, requireValidOrigin, safeCompareSecrets } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
 
@@ -45,18 +45,18 @@ export async function createPropHandler(
 
     const pool = poolResult[0];
 
-    // Check authorization
-    if (pool.captainSecret !== secret) {
+    // Check authorization (using timing-safe comparison)
+    if (!safeCompareSecrets(pool.captainSecret, secret)) {
       return NextResponse.json(
         { code: 'UNAUTHORIZED', message: 'Invalid secret' },
         { status: 401 }
       );
     }
 
-    // Check pool status - must be 'draft' to add props
-    if (pool.status !== 'draft') {
+    // Check pool status - must be 'open' to add props
+    if (pool.status !== 'open') {
       return NextResponse.json(
-        { code: 'POOL_LOCKED', message: 'Cannot add props after pool is open' },
+        { code: 'POOL_LOCKED', message: 'Cannot add props after pool is locked' },
         { status: 403 }
       );
     }
@@ -126,7 +126,7 @@ export async function createPropHandler(
 
 /**
  * POST /api/pools/[code]/props
- * Creates a new prop for a pool (requires captain_secret, draft status only)
+ * Creates a new prop for a pool (requires captain_secret, open status only)
  */
 export async function POST(
   request: NextRequest,

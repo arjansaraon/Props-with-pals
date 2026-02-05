@@ -39,7 +39,7 @@ describe('POST /api/pools', () => {
       const data = await response.json();
       expect(data.name).toBe('Super Bowl 2026');
       expect(data.captainName).toBe('John');
-      expect(data.status).toBe('draft');
+      expect(data.status).toBe('open');
     });
 
     it('returns invite code that is 6 characters', async () => {
@@ -53,14 +53,19 @@ describe('POST /api/pools', () => {
       expect(data.inviteCode).toMatch(/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/);
     });
 
-    it('returns captain secret as UUID', async () => {
+    it('stores captain secret as UUID in database (not in response body)', async () => {
       const response = await createPoolHandler(
         createRequest({ name: 'Test Pool', captainName: 'Bob' }),
         db
       );
 
       const data = await response.json();
-      expect(data.captainSecret).toMatch(
+      // Secret is now in httpOnly cookie, not response body
+      expect(data.captainSecret).toBeUndefined();
+
+      // Verify secret is stored in database as valid UUID
+      const poolList = await db.select().from(pools).where(eq(pools.id, data.id));
+      expect(poolList[0].captainSecret).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
       );
     });
@@ -142,12 +147,15 @@ describe('POST /api/pools', () => {
 
       const data = await response.json();
 
+      // Get pool and participant from database
+      const poolList = await db.select().from(pools).where(eq(pools.id, data.id));
       const participantList = await db
         .select()
         .from(participants)
         .where(eq(participants.poolId, data.id));
 
-      expect(participantList[0].secret).toBe(data.captainSecret);
+      // Verify captain participant secret matches pool's captainSecret
+      expect(participantList[0].secret).toBe(poolList[0].captainSecret);
     });
 
     it('captain participant has 0 total_points', async () => {
@@ -291,7 +299,10 @@ describe('POST /api/pools', () => {
       expect(poolList[0].name).toBe('Persisted Pool');
       expect(poolList[0].captainName).toBe('Tester');
       expect(poolList[0].inviteCode).toBe(data.inviteCode);
-      expect(poolList[0].captainSecret).toBe(data.captainSecret);
+      // Captain secret is stored in DB (not returned in response body anymore)
+      expect(poolList[0].captainSecret).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      );
     });
   });
 });

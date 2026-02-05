@@ -34,14 +34,6 @@ export async function joinPoolHandler(
 
     const pool = poolResult[0];
 
-    // Draft pools are hidden from non-captains (return 404)
-    if (pool.status === 'draft') {
-      return NextResponse.json(
-        { code: 'POOL_NOT_FOUND', message: 'Pool not found' },
-        { status: 404 }
-      );
-    }
-
     // Check pool status - must be 'open' to join
     if (pool.status !== 'open') {
       return NextResponse.json(
@@ -80,13 +72,12 @@ export async function joinPoolHandler(
       updatedAt: now,
     });
 
-    // Return participant with auth cookie set
+    // Return participant with auth cookie set (secret is in httpOnly cookie, not response body)
     return jsonResponseWithAuth(
       {
         id: participantId,
         poolId: pool.id,
         name,
-        secret: participantSecret,
         totalPoints: 0,
         status: 'active',
         joinedAt: now,

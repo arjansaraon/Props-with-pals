@@ -2,7 +2,7 @@ import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqli
 import { relations } from 'drizzle-orm';
 
 // Pool status enum values
-export const poolStatusValues = ['draft', 'open', 'locked', 'completed'] as const;
+export const poolStatusValues = ['open', 'locked', 'completed'] as const;
 export type PoolStatus = (typeof poolStatusValues)[number];
 
 // Prop status enum values

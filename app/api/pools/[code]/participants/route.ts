@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as schema from '@/src/lib/schema';
 import { participants, pools } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
-import { getSecret } from '@/src/lib/auth';
+import { getSecret, safeCompareSecrets } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 
 // Export Database type for testing
@@ -34,9 +34,9 @@ export async function getParticipantsHandler(
 
     const pool = poolResult[0];
 
-    // Verify captain authorization
+    // Verify captain authorization (using timing-safe comparison)
     const secret = await getSecret(code, request);
-    if (!secret || secret !== pool.captainSecret) {
+    if (!secret || !safeCompareSecrets(secret, pool.captainSecret)) {
       return NextResponse.json(
         { code: 'UNAUTHORIZED', message: 'Captain access required' },
         { status: 401 }
@@ -56,10 +56,10 @@ export async function getParticipantsHandler(
       .where(eq(participants.poolId, pool.id))
       .orderBy(participants.name);
 
-    // Mark the captain in the list
+    // Mark the captain in the list (using timing-safe comparison)
     const participantsWithRole = participantsList.map((p) => ({
       ...p,
-      isCaptain: p.secret === pool.captainSecret,
+      isCaptain: safeCompareSecrets(p.secret, pool.captainSecret),
     }));
 
     return NextResponse.json({ participants: participantsWithRole }, { status: 200 });

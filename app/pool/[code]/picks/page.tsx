@@ -1,36 +1,37 @@
-import { db } from '@/src/lib/db';
-import { pools, props, picks, participants } from '@/src/lib/schema';
-import { eq, and } from 'drizzle-orm';
-import Link from 'next/link';
-import { headers } from 'next/headers';
-import { PicksClient } from './picks-client';
-import { getPoolSecret } from '@/src/lib/auth';
-import { CopyLinkButton } from '@/app/components/copy-link-button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { Badge } from '@/app/components/ui/badge';
-import { Button } from '@/app/components/ui/button';
-import { Alert, AlertDescription } from '@/app/components/ui/alert';
-import { ArrowRight, AlertCircle, Lock, AlertTriangle } from 'lucide-react';
+import { db } from "@/src/lib/db";
+import { pools, props, picks, participants } from "@/src/lib/schema";
+import { eq, and } from "drizzle-orm";
+import Link from "next/link";
+import { headers } from "next/headers";
+import { PicksClient } from "./picks-client";
+import { getPoolSecret } from "@/src/lib/auth";
+import { CopyLinkButton } from "@/app/components/copy-link-button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
+import { Badge } from "@/app/components/ui/badge";
+import { Button } from "@/app/components/ui/button";
+import { Alert, AlertDescription } from "@/app/components/ui/alert";
+import { ArrowRight, AlertCircle, Lock, AlertTriangle } from "lucide-react";
 
 export default async function ParticipantPicks({
   params,
-  searchParams,
 }: {
   params: Promise<{ code: string }>;
-  searchParams: Promise<{ secret?: string }>;
 }) {
   const { code } = await params;
-  const { secret: querySecret } = await searchParams;
 
-  // Get secret from cookie (preferred) or query param (fallback for migration)
-  const cookieSecret = await getPoolSecret(code);
-  const secret = cookieSecret || querySecret;
+  // Get secret from cookie (secure, httpOnly - no URL fallback)
+  const secret = await getPoolSecret(code);
 
-  // Get host for building personal link
+  // Get host for building pool link (no secret - auth via cookie)
   const headersList = await headers();
-  const host = headersList.get('host') || 'localhost:3000';
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-  const personalLink = secret ? `${protocol}://${host}/pool/${code}/picks?secret=${secret}` : null;
+  const host = headersList.get("host") || "localhost:3000";
+  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+  const poolLink = `${protocol}://${host}/pool/${code}/picks`;
 
   // Fetch pool
   const poolResult = await db
@@ -64,7 +65,9 @@ export default async function ParticipantPicks({
     const participantResult = await db
       .select()
       .from(participants)
-      .where(and(eq(participants.poolId, pool.id), eq(participants.secret, secret)))
+      .where(
+        and(eq(participants.poolId, pool.id), eq(participants.secret, secret)),
+      )
       .limit(1);
 
     if (participantResult.length > 0) {
@@ -83,7 +86,12 @@ export default async function ParticipantPicks({
     }
   }
 
-  const statusVariant = pool.status === 'open' ? 'success' : pool.status === 'locked' ? 'warning' : 'info';
+  const statusVariant =
+    pool.status === "open"
+      ? "success"
+      : pool.status === "locked"
+        ? "warning"
+        : "info";
 
   return (
     <div className="min-h-screen p-4">
@@ -108,11 +116,12 @@ export default async function ParticipantPicks({
           <CardContent>
             <div className="flex items-center gap-3 mb-4">
               <p className="text-sm text-muted-foreground">
-                Your code: <span className="font-mono font-semibold text-foreground">{code}</span>
+                Pool code:{" "}
+                <span className="font-mono font-semibold text-foreground">
+                  {code}
+                </span>
               </p>
-              {personalLink && (
-                <CopyLinkButton url={personalLink} variant="compact" />
-              )}
+              {poolLink && <CopyLinkButton url={poolLink} variant="compact" />}
             </div>
 
             <Button asChild>
@@ -124,17 +133,17 @@ export default async function ParticipantPicks({
           </CardContent>
         </Card>
 
-        {pool.status !== 'open' && (
+        {pool.status !== "open" && (
           <Alert className="mb-6 border-amber-200 bg-amber-50">
-            {pool.status === 'locked' ? (
+            {pool.status === "locked" ? (
               <Lock className="h-4 w-4 text-amber-600" />
             ) : (
               <AlertTriangle className="h-4 w-4 text-amber-600" />
             )}
             <AlertDescription className="text-amber-800">
-              {pool.status === 'locked'
-                ? 'This pool is locked. Picks can no longer be changed.'
-                : 'This pool is completed. Check the leaderboard for results!'}
+              {pool.status === "locked"
+                ? "This pool is locked. Picks can no longer be changed."
+                : "This pool is completed. Check the leaderboard for results!"}
             </AlertDescription>
           </Alert>
         )}
@@ -143,7 +152,8 @@ export default async function ParticipantPicks({
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Invalid or missing participant secret. Please use the link you received when joining.
+              Invalid or missing participant secret. Please use the link you
+              received when joining.
             </AlertDescription>
           </Alert>
         )}
@@ -172,7 +182,6 @@ export default async function ParticipantPicks({
             secret={secret}
           />
         ) : null}
-
       </main>
     </div>
   );

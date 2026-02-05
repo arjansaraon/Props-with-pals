@@ -259,8 +259,8 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
     });
   });
 
-  describe('Pool Auto-Complete', () => {
-    it('sets pool status to completed after resolve', async () => {
+  describe('Pool Status After Resolve (No Auto-Complete)', () => {
+    it('keeps pool status as locked after resolving all props', async () => {
       const { poolId, propId, captainSecret } = await createFullTestSetup('RES06');
 
       await resolvePropHandler(
@@ -270,11 +270,12 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
         db
       );
 
+      // Pool should remain locked (captain must manually complete)
       const poolResult = await db.select().from(pools).where(eq(pools.id, poolId));
-      expect(poolResult[0].status).toBe('completed');
+      expect(poolResult[0].status).toBe('locked');
     });
 
-    it('returns pool status in response', async () => {
+    it('returns pool status as locked in response', async () => {
       const { propId, captainSecret } = await createFullTestSetup('RES07');
 
       const response = await resolvePropHandler(
@@ -285,7 +286,7 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
       );
 
       const data = await response.json();
-      expect(data.pool.status).toBe('completed');
+      expect(data.pool.status).toBe('locked');
     });
   });
 
@@ -357,11 +358,11 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
     });
   });
 
-  describe('Prop Validation', () => {
-    it('rejects if prop already resolved (400)', async () => {
+  describe('Re-Resolving Props (Edit Correct Answer)', () => {
+    it('allows re-resolving a prop while pool is locked', async () => {
       const { propId, captainSecret } = await createFullTestSetup('RES12');
 
-      // First resolve
+      // First resolve with answer = 0
       await resolvePropHandler(
         createRequest('RES12', propId, captainSecret, { correctOptionIndex: 0 }),
         'RES12',
@@ -369,10 +370,7 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
         db
       );
 
-      // Need to set pool back to locked for second attempt
-      await db.update(pools).set({ status: 'locked' });
-
-      // Second resolve attempt
+      // Change to answer = 1
       const response = await resolvePropHandler(
         createRequest('RES12', propId, captainSecret, { correctOptionIndex: 1 }),
         'RES12',
@@ -380,11 +378,48 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
         db
       );
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(200);
       const data = await response.json();
-      expect(data.code).toBe('ALREADY_RESOLVED');
+      expect(data.prop.correctOptionIndex).toBe(1);
     });
 
+    it('recalculates points when re-resolving', async () => {
+      const { propId, captainSecret, participant1Id, participant2Id, participant3Id } =
+        await createFullTestSetup('RES12B');
+
+      // First resolve: answer = 0 (Alice picked 0 = correct, Bob/Carol picked 1 = wrong)
+      await resolvePropHandler(
+        createRequest('RES12B', propId, captainSecret, { correctOptionIndex: 0 }),
+        'RES12B',
+        propId,
+        db
+      );
+
+      // Check Alice has 10 points, Bob/Carol have 0
+      let alice = await db.select().from(participants).where(eq(participants.id, participant1Id));
+      let bob = await db.select().from(participants).where(eq(participants.id, participant2Id));
+      expect(alice[0].totalPoints).toBe(10);
+      expect(bob[0].totalPoints).toBe(0);
+
+      // Re-resolve: answer = 1 (Alice picked 0 = wrong, Bob/Carol picked 1 = correct)
+      await resolvePropHandler(
+        createRequest('RES12B', propId, captainSecret, { correctOptionIndex: 1 }),
+        'RES12B',
+        propId,
+        db
+      );
+
+      // Check Alice now has 0 points, Bob/Carol now have 10
+      alice = await db.select().from(participants).where(eq(participants.id, participant1Id));
+      bob = await db.select().from(participants).where(eq(participants.id, participant2Id));
+      const carol = await db.select().from(participants).where(eq(participants.id, participant3Id));
+      expect(alice[0].totalPoints).toBe(0);
+      expect(bob[0].totalPoints).toBe(10);
+      expect(carol[0].totalPoints).toBe(10);
+    });
+  });
+
+  describe('Prop Validation', () => {
     it('rejects negative correctOptionIndex (400)', async () => {
       const { propId, captainSecret } = await createFullTestSetup('RES13');
 

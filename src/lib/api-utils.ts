@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pools, participants } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
+import { safeCompareSecrets } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
 
@@ -87,12 +88,13 @@ export async function findPoolByCode(
 /**
  * Validates that a secret matches the captain secret.
  * Returns an error response if invalid, null if valid.
+ * Uses timing-safe comparison to prevent timing attacks.
  */
 export function validateCaptainSecret(
   pool: Pool,
   secret: string
 ): NextResponse | null {
-  if (pool.captainSecret !== secret) {
+  if (!safeCompareSecrets(pool.captainSecret, secret)) {
     return ApiErrors.unauthorized();
   }
   return null;

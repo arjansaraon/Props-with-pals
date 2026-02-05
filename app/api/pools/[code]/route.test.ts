@@ -297,7 +297,7 @@ describe('PATCH /api/pools/[code] (Edit Pool Details)', () => {
       inviteCode: 'EDIT01',
       captainName: 'Captain',
       captainSecret: crypto.randomUUID(),
-      status: 'draft' as const,
+      status: 'open' as const,
       description: null,
       buyInAmount: null,
       createdAt: now,
@@ -319,7 +319,7 @@ describe('PATCH /api/pools/[code] (Edit Pool Details)', () => {
   }
 
   describe('Edit Name', () => {
-    it('updates pool name in draft status', async () => {
+    it('updates pool name in open status', async () => {
       const pool = await createTestPool({ inviteCode: 'EDIT02' });
 
       const response = await updatePoolHandler(
@@ -333,7 +333,7 @@ describe('PATCH /api/pools/[code] (Edit Pool Details)', () => {
       expect(data.name).toBe('New Pool Name');
     });
 
-    it('updates pool name in open status', async () => {
+    it('also updates pool name in open status with explicit status', async () => {
       const pool = await createTestPool({ inviteCode: 'EDIT03', status: 'open' });
 
       const response = await updatePoolHandler(
@@ -475,6 +475,124 @@ describe('PATCH /api/pools/[code] (Edit Pool Details)', () => {
       const response = await updatePoolHandler(
         createEditRequest('EDIT12', 'wrong-secret', { name: 'New Name' }),
         'EDIT12',
+        db
+      );
+
+      expect(response.status).toBe(401);
+      const data = await response.json();
+      expect(data.code).toBe('UNAUTHORIZED');
+    });
+  });
+});
+
+describe('PATCH /api/pools/[code] (Complete Pool)', () => {
+  let db: Database;
+  let cleanup: () => void;
+
+  beforeEach(async () => {
+    const setup = await setupTestDb();
+    db = setup.db as Database;
+    cleanup = setup.cleanup;
+  });
+
+  afterEach(() => {
+    cleanup?.();
+  });
+
+  // Helper to create a test pool
+  async function createTestPool(overrides: Partial<typeof pools.$inferInsert> = {}) {
+    const now = new Date().toISOString();
+    const poolData = {
+      id: crypto.randomUUID(),
+      name: 'Test Pool',
+      inviteCode: 'COMP01',
+      captainName: 'Captain',
+      captainSecret: crypto.randomUUID(),
+      status: 'locked' as const,
+      buyInAmount: null,
+      createdAt: now,
+      updatedAt: now,
+      ...overrides,
+    };
+
+    await db.insert(pools).values(poolData);
+    return poolData;
+  }
+
+  // Helper to create PATCH request for completing pool
+  function createCompleteRequest(code: string, secret: string) {
+    return new NextRequest(`http://localhost:3000/api/pools/${code}?secret=${secret}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'completed' }),
+    });
+  }
+
+  describe('Happy Path', () => {
+    it('updates status from locked to completed', async () => {
+      const pool = await createTestPool({ inviteCode: 'COMP02' });
+
+      const response = await updatePoolHandler(
+        createCompleteRequest('COMP02', pool.captainSecret),
+        'COMP02',
+        db
+      );
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.status).toBe('completed');
+    });
+
+    it('returns updated pool data', async () => {
+      const pool = await createTestPool({ inviteCode: 'COMP03', name: 'Completable Pool' });
+
+      const response = await updatePoolHandler(
+        createCompleteRequest('COMP03', pool.captainSecret),
+        'COMP03',
+        db
+      );
+
+      const data = await response.json();
+      expect(data.name).toBe('Completable Pool');
+      expect(data.status).toBe('completed');
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('rejects completing an open pool (must lock first)', async () => {
+      const pool = await createTestPool({ inviteCode: 'COMP04', status: 'open' });
+
+      const response = await updatePoolHandler(
+        createCompleteRequest('COMP04', pool.captainSecret),
+        'COMP04',
+        db
+      );
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe('INVALID_TRANSITION');
+    });
+
+    it('rejects completing an already completed pool', async () => {
+      const pool = await createTestPool({ inviteCode: 'COMP06', status: 'completed' });
+
+      const response = await updatePoolHandler(
+        createCompleteRequest('COMP06', pool.captainSecret),
+        'COMP06',
+        db
+      );
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe('POOL_LOCKED');
+    });
+
+    it('rejects unauthorized completion', async () => {
+      await createTestPool({ inviteCode: 'COMP07' });
+
+      const response = await updatePoolHandler(
+        createCompleteRequest('COMP07', 'wrong-secret'),
+        'COMP07',
         db
       );
 

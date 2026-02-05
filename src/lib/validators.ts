@@ -38,7 +38,7 @@ export const UpdatePoolSchema = z.object({
     .max(500, 'Description must be 500 characters or less')
     .nullable()
     .optional(),
-  status: z.enum(['open', 'locked']).optional(),
+  status: z.enum(['open', 'locked', 'completed']).optional(),
 });
 
 export type UpdatePoolInput = z.infer<typeof UpdatePoolSchema>;

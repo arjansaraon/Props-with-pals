@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pools, type Pool } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
-import { getSecret } from '@/src/lib/auth';
+import { getSecret, safeCompareSecrets } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
 
@@ -21,12 +21,10 @@ export type PoolAuthResult =
  * @param request - The NextRequest (for extracting secret)
  * @param database - The database instance
  * @param options.requireCaptain - If true, requires captain secret (returns 401 if invalid)
- * @param options.allowDraft - If true with requireCaptain, allows access to draft pools
  *
  * Behavior:
  * - If pool not found: returns 404
  * - If requireCaptain and no/wrong secret: returns 401
- * - If pool is draft and user is not captain: returns 404 (hides draft existence)
  */
 export async function getPoolWithAuth(
   code: string,
@@ -58,8 +56,8 @@ export async function getPoolWithAuth(
   // Get secret from cookie or query params
   const secret = await getSecret(code, request);
 
-  // Check if user is the captain
-  const isCaptain = secret === pool.captainSecret;
+  // Check if user is the captain (using timing-safe comparison)
+  const isCaptain = safeCompareSecrets(secret, pool.captainSecret);
 
   // If captain access is required, validate
   if (requireCaptain) {
@@ -84,17 +82,6 @@ export async function getPoolWithAuth(
     }
   }
 
-  // Draft pools are hidden from non-captains
-  if (pool.status === 'draft' && !isCaptain) {
-    return {
-      success: false,
-      response: NextResponse.json(
-        { code: 'POOL_NOT_FOUND', message: 'Pool not found' },
-        { status: 404 }
-      ),
-    };
-  }
-
   return { success: true, pool, isCaptain };
 }
 
@@ -112,9 +99,9 @@ export const poolStatusErrors = {
       { code: 'POOL_LOCKED', message: 'Cannot edit props after pool is locked' },
       { status: 403 }
     ),
-  cannotDeleteAfterOpen: () =>
+  cannotDeleteAfterLocked: () =>
     NextResponse.json(
-      { code: 'POOL_LOCKED', message: 'Cannot delete props after pool is open' },
+      { code: 'POOL_LOCKED', message: 'Cannot delete props after pool is locked' },
       { status: 403 }
     ),
   cannotJoinLocked: () =>

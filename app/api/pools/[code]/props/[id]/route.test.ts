@@ -49,7 +49,7 @@ describe('PATCH /api/pools/[code]/props/[id]', () => {
       inviteCode: 'EDIT01',
       captainName: 'Captain',
       captainSecret: crypto.randomUUID(),
-      status: 'draft' as const,
+      status: 'open' as const,
       buyInAmount: null,
       createdAt: now,
       updatedAt: now,
@@ -82,8 +82,8 @@ describe('PATCH /api/pools/[code]/props/[id]', () => {
     return propData;
   }
 
-  describe('Draft Status - Full Edit', () => {
-    it('updates questionText in draft', async () => {
+  describe('Open Status - Full Edit', () => {
+    it('updates questionText when open', async () => {
       const pool = await createTestPool({ inviteCode: 'EDIT02' });
       const prop = await createTestProp(pool.id);
 
@@ -101,7 +101,7 @@ describe('PATCH /api/pools/[code]/props/[id]', () => {
       expect(data.questionText).toBe('Updated question?');
     });
 
-    it('updates options in draft', async () => {
+    it('updates options when open', async () => {
       const pool = await createTestPool({ inviteCode: 'EDIT03' });
       const prop = await createTestProp(pool.id);
 
@@ -119,7 +119,7 @@ describe('PATCH /api/pools/[code]/props/[id]', () => {
       expect(data.options).toEqual(['Option 1', 'Option 2', 'Option 3']);
     });
 
-    it('updates pointValue in draft', async () => {
+    it('updates pointValue when open', async () => {
       const pool = await createTestPool({ inviteCode: 'EDIT04' });
       const prop = await createTestProp(pool.id);
 
@@ -137,7 +137,7 @@ describe('PATCH /api/pools/[code]/props/[id]', () => {
       expect(data.pointValue).toBe(25);
     });
 
-    it('updates multiple fields at once in draft', async () => {
+    it('updates multiple fields at once when open', async () => {
       const pool = await createTestPool({ inviteCode: 'EDIT05' });
       const prop = await createTestProp(pool.id);
 
@@ -159,63 +159,6 @@ describe('PATCH /api/pools/[code]/props/[id]', () => {
       expect(data.options).toEqual(['A', 'B', 'C']);
       expect(data.pointValue).toBe(15);
       expect(data.category).toBe('Sports');
-    });
-  });
-
-  describe('Open Status - Text Only Edit', () => {
-    it('allows questionText edit when open', async () => {
-      const pool = await createTestPool({ inviteCode: 'EDIT06', status: 'open' });
-      const prop = await createTestProp(pool.id);
-
-      const response = await updatePropHandler(
-        createPatchRequest('EDIT06', prop.id, pool.captainSecret, {
-          questionText: 'Fixed typo?',
-        }),
-        'EDIT06',
-        prop.id,
-        db
-      );
-
-      expect(response.status).toBe(200);
-      const data = await response.json();
-      expect(data.questionText).toBe('Fixed typo?');
-    });
-
-    it('rejects options edit when open', async () => {
-      const pool = await createTestPool({ inviteCode: 'EDIT07', status: 'open' });
-      const prop = await createTestProp(pool.id);
-
-      const response = await updatePropHandler(
-        createPatchRequest('EDIT07', prop.id, pool.captainSecret, {
-          options: ['New A', 'New B'],
-        }),
-        'EDIT07',
-        prop.id,
-        db
-      );
-
-      expect(response.status).toBe(400);
-      const data = await response.json();
-      expect(data.code).toBe('VALIDATION_ERROR');
-      expect(data.message).toContain('questionText');
-    });
-
-    it('rejects pointValue edit when open', async () => {
-      const pool = await createTestPool({ inviteCode: 'EDIT08', status: 'open' });
-      const prop = await createTestProp(pool.id);
-
-      const response = await updatePropHandler(
-        createPatchRequest('EDIT08', prop.id, pool.captainSecret, {
-          pointValue: 50,
-        }),
-        'EDIT08',
-        prop.id,
-        db
-      );
-
-      expect(response.status).toBe(400);
-      const data = await response.json();
-      expect(data.code).toBe('VALIDATION_ERROR');
     });
   });
 
@@ -407,7 +350,7 @@ describe('DELETE /api/pools/[code]/props/[id]', () => {
       inviteCode: 'DEL01',
       captainName: 'Captain',
       captainSecret: crypto.randomUUID(),
-      status: 'draft' as const,
+      status: 'open' as const,
       buyInAmount: null,
       createdAt: now,
       updatedAt: now,
@@ -441,7 +384,7 @@ describe('DELETE /api/pools/[code]/props/[id]', () => {
   }
 
   describe('Happy Path', () => {
-    it('deletes prop in draft status', async () => {
+    it('deletes prop in open status', async () => {
       const pool = await createTestPool({ inviteCode: 'DEL02' });
       const prop = await createTestProp(pool.id);
 
@@ -463,22 +406,6 @@ describe('DELETE /api/pools/[code]/props/[id]', () => {
   });
 
   describe('Status Restrictions', () => {
-    it('rejects delete when pool is open', async () => {
-      const pool = await createTestPool({ inviteCode: 'DEL03', status: 'open' });
-      const prop = await createTestProp(pool.id);
-
-      const response = await deletePropHandler(
-        createDeleteRequest('DEL03', prop.id, pool.captainSecret),
-        'DEL03',
-        prop.id,
-        db
-      );
-
-      expect(response.status).toBe(403);
-      const data = await response.json();
-      expect(data.code).toBe('POOL_LOCKED');
-    });
-
     it('rejects delete when pool is locked', async () => {
       const pool = await createTestPool({ inviteCode: 'DEL04', status: 'locked' });
       const prop = await createTestProp(pool.id);

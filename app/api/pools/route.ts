@@ -39,7 +39,7 @@ export async function createPoolHandler(
 
     // Create pool and captain participant in a transaction
     await database.transaction(async (tx) => {
-      // Insert pool (starts in 'draft' status)
+      // Insert pool (starts in 'open' status)
       await tx.insert(pools).values({
         id: poolId,
         name,
@@ -48,7 +48,7 @@ export async function createPoolHandler(
         buyInAmount: buyInAmount ?? null,
         captainName,
         captainSecret,
-        status: 'draft',
+        status: 'open',
         createdAt: now,
         updatedAt: now,
       });
@@ -67,8 +67,7 @@ export async function createPoolHandler(
       });
     });
 
-    // Return created pool with auth cookie set
-    // Note: captainSecret still returned in response for backward compatibility during migration
+    // Return created pool with auth cookie set (secret is in httpOnly cookie, not response body)
     return jsonResponseWithAuth(
       {
         id: poolId,
@@ -76,9 +75,8 @@ export async function createPoolHandler(
         description: description ?? null,
         inviteCode,
         captainName,
-        captainSecret,
         buyInAmount: buyInAmount ?? null,
-        status: 'draft',
+        status: 'open',
         createdAt: now,
       },
       inviteCode,

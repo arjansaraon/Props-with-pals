@@ -7,22 +7,26 @@ import { headers } from 'next/headers';
 import { Card, CardContent } from '@/app/components/ui/card';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Button } from '@/app/components/ui/button';
-import { CheckCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Info } from 'lucide-react';
+import { getPoolSecret } from '@/src/lib/auth';
 
 export default async function JoinedConfirmation({
   params,
   searchParams,
 }: {
   params: Promise<{ code: string }>;
-  searchParams: Promise<{ secret?: string; name?: string }>;
+  searchParams: Promise<{ name?: string }>;
 }) {
   const { code } = await params;
-  const { secret, name } = await searchParams;
+  const { name } = await searchParams;
 
   // Get the host for building the full URL
   const headersList = await headers();
   const host = headersList.get('host') || 'localhost:3000';
   const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+
+  // Get secret from cookie (secure, httpOnly)
+  const secret = await getPoolSecret(code);
 
   // Fetch pool info
   const poolResult = await db
@@ -62,8 +66,8 @@ export default async function JoinedConfirmation({
     }
   }
 
-  // Build the personal picks URL
-  const picksUrl = `${protocol}://${host}/pool/${code}/picks?secret=${secret}`;
+  // Build the picks URL (no secret needed - cookie handles auth)
+  const picksUrl = `${protocol}://${host}/pool/${code}/picks`;
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -88,23 +92,23 @@ export default async function JoinedConfirmation({
               )}
             </div>
 
-            {/* Save link warning */}
-            <Alert className="mb-6 border-amber-200 bg-amber-50">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
+            {/* Session info */}
+            <Alert className="mb-6 border-blue-200 bg-blue-50">
+              <Info className="h-4 w-4 text-blue-600" />
               <AlertDescription>
-                <p className="text-sm font-medium text-amber-800">
-                  Save this link to return later
+                <p className="text-sm font-medium text-blue-800">
+                  You&apos;re logged in on this device
                 </p>
-                <p className="text-xs text-amber-700 mt-1">
-                  This is your personal link. Bookmark it or copy it somewhere safe.
+                <p className="text-xs text-blue-700 mt-1">
+                  Your session is saved securely. You can bookmark this page to return later.
                 </p>
               </AlertDescription>
             </Alert>
 
-            {/* Personal link display */}
+            {/* Pool link display */}
             <div className="mb-6">
               <div className="bg-muted rounded-lg p-3 mb-3">
-                <p className="text-xs text-muted-foreground mb-1">Your personal link:</p>
+                <p className="text-xs text-muted-foreground mb-1">Pool link:</p>
                 <p className="text-sm font-mono text-foreground break-all">
                   {picksUrl}
                 </p>
@@ -114,7 +118,7 @@ export default async function JoinedConfirmation({
 
             {/* Go to picks button */}
             <Button asChild className="w-full h-12 bg-emerald-600 hover:bg-emerald-700">
-              <Link href={`/pool/${code}/picks?secret=${secret}`}>
+              <Link href={`/pool/${code}/picks`}>
                 Go to My Picks →
               </Link>
             </Button>

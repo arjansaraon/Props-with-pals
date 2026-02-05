@@ -151,14 +151,21 @@ Priority items for MVP:
 General
 
 - [ ] Color scheme is too dark
+- [ ] Create pool flow
+- [ ] Join pool flow
+- [ ] Break down files that are too large, test coverage, security review, and code review
+- [ ] Rework the roadmap
+- [ ] Full UI test for creating a real pool and multiple participants on the server
 
 Participant
 
-- [ ]
+- [ ] Need to be able to submit picks
+- [ ] Easy to log back in
 
 Captain
 
-- [ ]
+- [ ] Add New Prop should be an action button that then expands, not always open at the top
+- [ ] Pools should start open
 
 **Exit Criteria**: Smooth, polished experience for casual use
 
@@ -181,10 +188,9 @@ Captain
 ### Features
 
 - [ ] Edit picks before lock
-- [ ] Pool settings (lock time, visibility)
-- [ ] Shareable results image
 - [ ] View other players' picks (after lock)
-- [ ] Easy share link (tap to copy participant's unique URL)
+- [ ] View picks per question
+- [ ] 'Spreadsheet' view
 - [ ] Prop categories/sections
 - [ ] Tiebreaker questions
 - [ ] Track payments
@@ -209,8 +215,11 @@ Captain
 
 ### Potential Features
 
+- [ ] Pool settings (lock time, visibility)
+- [ ] Shareable results image
 - [ ] Real-time updates via Server-Sent Events (SSE) - replace polling
 - [ ] Dark mode support
+- [ ] Projected picks
 - [ ] Pick history / audit trail (see when picks were made/changed, locked after pool lock)
 - [ ] Pool history (view past pools)
 - [ ] Pool templates (reuse props)

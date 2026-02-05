@@ -76,7 +76,7 @@ describe('POST /api/pools/[code]/join', () => {
       expect(data.name).toBe('Alice');
     });
 
-    it('returns participant secret as UUID', async () => {
+    it('stores participant secret as UUID in database (not in response body)', async () => {
       const pool = await createTestPool({ inviteCode: 'JOIN03' });
 
       const response = await joinPoolHandler(
@@ -86,7 +86,15 @@ describe('POST /api/pools/[code]/join', () => {
       );
 
       const data = await response.json();
-      expect(data.secret).toMatch(
+      // Secret is now in httpOnly cookie, not response body
+      expect(data.secret).toBeUndefined();
+
+      // Verify secret is stored in database as valid UUID
+      const participantList = await db
+        .select()
+        .from(participants)
+        .where(eq(participants.id, data.id));
+      expect(participantList[0].secret).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
       );
     });

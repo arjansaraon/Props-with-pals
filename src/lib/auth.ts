@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 
 const COOKIE_NAME = 'pwp_auth';
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
@@ -56,17 +57,18 @@ export async function getPoolSecret(code: string): Promise<string | null> {
 }
 
 /**
- * Gets the secret from either cookies (preferred) or query params (deprecated fallback).
- * During migration, we support both methods.
+ * Gets the secret from cookies, with query param fallback for testing.
+ * In production, cookies are the primary auth mechanism.
+ * Query params are only used when cookies() is unavailable (e.g., in tests).
  */
 export async function getSecret(code: string, request: NextRequest): Promise<string | null> {
-  // Try cookie first (new method)
+  // Try cookies first (preferred)
   const cookieSecret = await getPoolSecret(code);
   if (cookieSecret) {
     return cookieSecret;
   }
 
-  // Fall back to query param (deprecated, for migration and tests)
+  // Fallback to query params (for tests and backwards compatibility)
   const url = new URL(request.url);
   return url.searchParams.get('secret');
 }
@@ -160,14 +162,16 @@ export async function clearPoolSecretCookie(
 /**
  * Validates the Origin header for CSRF protection.
  * Returns true if the request is from an allowed origin.
+ * Requires at least one of Origin or Referer headers to be present.
  */
 export function validateOrigin(request: NextRequest): boolean {
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
 
-  // Allow requests with no origin (same-origin requests from forms)
+  // Require at least one header for CSRF protection
+  // Note: curl users should add -H "Origin: http://localhost:3000" to their commands
   if (!origin && !referer) {
-    return true;
+    return false;
   }
 
   // Get expected host
@@ -239,4 +243,19 @@ export async function refreshAuthCookie(response: NextResponse): Promise<NextRes
   }
 
   return response;
+}
+
+/**
+ * Compares two secrets using timing-safe comparison to prevent timing attacks.
+ * Returns true if secrets match, false otherwise.
+ */
+export function safeCompareSecrets(a: string | null, b: string | null): boolean {
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+
+  try {
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
 }

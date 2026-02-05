@@ -14,6 +14,7 @@ import {
 } from '@/app/components/ui/table';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Trophy } from 'lucide-react';
+import { getPoolSecret, safeCompareSecrets } from '@/src/lib/auth';
 
 export default async function Leaderboard({
   params,
@@ -38,6 +39,10 @@ export default async function Leaderboard({
   }
 
   const pool = poolResult[0];
+
+  // Check if current user is the captain
+  const secret = await getPoolSecret(code);
+  const isCaptain = secret ? safeCompareSecrets(pool.captainSecret, secret) : false;
 
   // Fetch participants ordered by points
   const leaderboard = await db
@@ -65,10 +70,10 @@ export default async function Leaderboard({
               </Badge>
             </div>
             <Link
-              href={`/pool/${code}/picks`}
+              href={isCaptain ? `/pool/${code}/captain` : `/pool/${code}/picks`}
               className="text-primary hover:text-primary/80 text-sm font-medium"
             >
-              ← Back to my picks
+              {isCaptain ? '← Back to admin board' : '← Back to my picks'}
             </Link>
           </CardHeader>
         </Card>

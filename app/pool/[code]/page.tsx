@@ -81,8 +81,8 @@ export default function JoinPool({
       // Save user session to localStorage (cookie auth handles the secret)
       saveUserSession(code, { name, isCaptain: false });
 
-      // Redirect to joined confirmation page with secret
-      router.push(`/pool/${code}/joined?secret=${data.secret}&name=${encodeURIComponent(name)}`);
+      // Redirect to joined confirmation page (auth is handled by httpOnly cookie)
+      router.push(`/pool/${code}/joined?name=${encodeURIComponent(name)}`);
     } catch {
       setError('Failed to join pool. Please try again.');
     } finally {

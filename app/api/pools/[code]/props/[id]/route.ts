@@ -13,8 +13,7 @@ export type { Database };
 
 /**
  * Updates a prop.
- * - In draft: Can edit all fields (questionText, options, pointValue, category)
- * - In open: Can only edit questionText (for typo fixes)
+ * - In open: Can edit all fields (questionText, options, pointValue, category)
  * - In locked/completed: Cannot edit
  * Exported for testing with injected database.
  */
@@ -68,64 +67,32 @@ export async function updatePropHandler(
     const { questionText, options, pointValue, category } = parseResult.data;
     const now = new Date().toISOString();
 
-    // Determine what can be edited based on pool status
-    if (pool.status === 'draft') {
-      // In draft: can edit everything
-      const updates: Partial<typeof props.$inferInsert> = { updatedAt: now };
+    // In open: can edit everything
+    const updates: Partial<typeof props.$inferInsert> = { updatedAt: now };
 
-      if (questionText !== undefined) {
-        updates.questionText = questionText.trim();
-      }
-      if (options !== undefined) {
-        updates.options = options;
-      }
-      if (pointValue !== undefined) {
-        updates.pointValue = pointValue;
-      }
-      if (category !== undefined) {
-        updates.category = category || null;
-      }
-
-      await database.update(props).set(updates).where(eq(props.id, propId));
-
-      // Fetch updated prop
-      const updatedProp = await database
-        .select()
-        .from(props)
-        .where(eq(props.id, propId))
-        .limit(1);
-
-      return NextResponse.json(updatedProp[0], { status: 200 });
-    } else {
-      // In open: can only edit questionText (for typo fixes)
-      if (options !== undefined || pointValue !== undefined) {
-        return NextResponse.json(
-          { code: 'VALIDATION_ERROR', message: 'Can only edit questionText after pool is open' },
-          { status: 400 }
-        );
-      }
-
-      if (questionText === undefined) {
-        return NextResponse.json(
-          { code: 'VALIDATION_ERROR', message: 'No changes provided' },
-          { status: 400 }
-        );
-      }
-
-      await database
-        .update(props)
-        .set({ questionText: questionText.trim(), updatedAt: now })
-        .where(eq(props.id, propId));
-
-      // Fetch updated prop
-      const updatedProp = await database
-        .select()
-        .from(props)
-        .where(eq(props.id, propId))
-        .limit(1);
-
-      return NextResponse.json(updatedProp[0], { status: 200 });
+    if (questionText !== undefined) {
+      updates.questionText = questionText.trim();
     }
+    if (options !== undefined) {
+      updates.options = options;
+    }
+    if (pointValue !== undefined) {
+      updates.pointValue = pointValue;
+    }
+    if (category !== undefined) {
+      updates.category = category || null;
+    }
+
+    await database.update(props).set(updates).where(eq(props.id, propId));
+
+    // Fetch updated prop
+    const updatedProp = await database
+      .select()
+      .from(props)
+      .where(eq(props.id, propId))
+      .limit(1);
+
+    return NextResponse.json(updatedProp[0], { status: 200 });
   } catch (error) {
     console.error('Error updating prop:', error);
     return NextResponse.json(
@@ -137,7 +104,7 @@ export async function updatePropHandler(
 
 /**
  * Deletes a prop (hard delete).
- * Only allowed when pool is in draft status.
+ * Only allowed when pool is in open status.
  * Exported for testing with injected database.
  */
 export async function deletePropHandler(
@@ -157,9 +124,9 @@ export async function deletePropHandler(
 
     const { pool } = result;
 
-    // Check pool status - can only delete in draft
-    if (pool.status !== 'draft') {
-      return poolStatusErrors.cannotDeleteAfterOpen();
+    // Check pool status - can only delete in open
+    if (pool.status !== 'open') {
+      return poolStatusErrors.cannotDeleteAfterLocked();
     }
 
     // Find the prop
@@ -208,7 +175,7 @@ export async function PATCH(
 
 /**
  * DELETE /api/pools/[code]/props/[id]
- * Deletes a prop (captain only, draft status only)
+ * Deletes a prop (captain only, open status only)
  */
 export async function DELETE(
   request: NextRequest,

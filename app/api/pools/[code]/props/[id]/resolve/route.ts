@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pools, props, picks, participants } from '@/src/lib/schema';
-import { eq, and, sum, isNull, inArray } from 'drizzle-orm';
+import { eq, and, sum, inArray } from 'drizzle-orm';
 import { ResolveSchema } from '@/src/lib/validators';
-import { getSecret, requireValidOrigin } from '@/src/lib/auth';
+import { getSecret, requireValidOrigin, safeCompareSecrets } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
 
 export type Database = LibSQLDatabase<typeof schema>;
 
 /**
- * Resolves a prop by setting the correct answer.
- * Calculates points for all picks, updates participant totals,
- * and auto-completes the pool.
+ * Resolves (or re-resolves) a prop by setting the correct answer.
+ * Calculates points for all picks and updates participant totals.
+ * Can be called multiple times while pool is locked to change the answer.
+ * Pool must be manually completed by captain via separate endpoint.
  * Exported for testing with injected database.
  */
 export async function resolvePropHandler(
@@ -47,8 +48,8 @@ export async function resolvePropHandler(
 
     const pool = poolResult[0];
 
-    // Check authorization
-    if (pool.captainSecret !== secret) {
+    // Check authorization (using timing-safe comparison)
+    if (!safeCompareSecrets(pool.captainSecret, secret)) {
       return NextResponse.json(
         { code: 'UNAUTHORIZED', message: 'Invalid secret' },
         { status: 401 }
@@ -56,7 +57,7 @@ export async function resolvePropHandler(
     }
 
     // Check pool status - must be 'locked' to resolve
-    if (pool.status === 'draft' || pool.status === 'open') {
+    if (pool.status === 'open') {
       return NextResponse.json(
         { code: 'POOL_NOT_LOCKED', message: 'Pool must be locked first' },
         { status: 403 }
@@ -99,13 +100,7 @@ export async function resolvePropHandler(
 
     const prop = propResult[0];
 
-    // Check if already resolved
-    if (prop.correctOptionIndex !== null) {
-      return NextResponse.json(
-        { code: 'ALREADY_RESOLVED', message: 'Prop has already been resolved' },
-        { status: 400 }
-      );
-    }
+    // Note: Re-resolving is allowed while pool is locked (captain can change answer)
 
     // Validate option index is within range
     const options = prop.options as string[];
@@ -176,28 +171,7 @@ export async function resolvePropHandler(
         }
       }
 
-      // 5. Check if all props are resolved (for auto-complete)
-      const unresolvedProps = await tx
-        .select()
-        .from(props)
-        .where(
-          and(
-            eq(props.poolId, pool.id),
-            isNull(props.correctOptionIndex),
-            eq(props.status, 'active')
-          )
-        );
-
-      // 6. If all props resolved, complete the pool
-      if (unresolvedProps.length === 0) {
-        await tx
-          .update(pools)
-          .set({
-            status: 'completed',
-            updatedAt: now,
-          })
-          .where(eq(pools.id, pool.id));
-      }
+      // Note: Pool completion is now manual via PATCH /api/pools/[code] { status: 'completed' }
     });
 
     // Get updated data for response

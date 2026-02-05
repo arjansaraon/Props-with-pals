@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from '@/app/components/spinner';
+import { usePicks } from '@/app/hooks/use-picks';
 import { useToast } from '@/app/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
@@ -35,71 +35,25 @@ export function PicksClient({
 }: PicksClientProps) {
   const router = useRouter();
   const { showToast } = useToast();
-  const [myPicks, setMyPicks] = useState<Map<string, number>>(() => {
-    const map = new Map<string, number>();
-    initialPicks.forEach((p) => map.set(p.propId, p.selectedOptionIndex));
-    return map;
+
+  // Use the shared picks hook for all state management
+  const {
+    myPicks,
+    submitting,
+    pickErrorPropId: errorPropId,
+    pickedCount,
+    allPicked,
+    progressPercent,
+    handlePick,
+  } = usePicks({
+    code,
+    secret,
+    initialPicks,
+    poolStatus,
+    totalProps: propsList.length,
   });
-  const [submitting, setSubmitting] = useState<{ propId: string; index: number } | null>(null);
-  const [errorPropId, setErrorPropId] = useState<string | null>(null);
 
-  // Progress tracking
   const totalProps = propsList.length;
-  const pickedCount = myPicks.size;
-  const allPicked = totalProps > 0 && pickedCount === totalProps;
-  const progressPercent = totalProps > 0 ? (pickedCount / totalProps) * 100 : 0;
-
-  async function handlePick(propId: string, selectedOptionIndex: number) {
-    if (poolStatus !== 'open') return;
-
-    // Store previous pick for rollback on error
-    const previousPick = myPicks.get(propId);
-
-    // Optimistic update - show selection immediately
-    setMyPicks((prev) => new Map(prev).set(propId, selectedOptionIndex));
-    setSubmitting({ propId, index: selectedOptionIndex });
-    setErrorPropId(null);
-
-    try {
-      const response = await fetch(`/api/pools/${code}/picks?secret=${encodeURIComponent(secret)}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propId, selectedOptionIndex }),
-      });
-
-      if (!response.ok) {
-        // Rollback optimistic update
-        setMyPicks((prev) => {
-          const newMap = new Map(prev);
-          if (previousPick !== undefined) {
-            newMap.set(propId, previousPick);
-          } else {
-            newMap.delete(propId);
-          }
-          return newMap;
-        });
-        setErrorPropId(propId);
-        return;
-      }
-
-      showToast('Pick saved!', 'success');
-    } catch {
-      // Rollback optimistic update
-      setMyPicks((prev) => {
-        const newMap = new Map(prev);
-        if (previousPick !== undefined) {
-          newMap.set(propId, previousPick);
-        } else {
-          newMap.delete(propId);
-        }
-        return newMap;
-      });
-      setErrorPropId(propId);
-    } finally {
-      setSubmitting(null);
-    }
-  }
 
   function handleSubmit() {
     showToast('All picks submitted!', 'success');
