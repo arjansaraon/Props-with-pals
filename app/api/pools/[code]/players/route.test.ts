@@ -121,8 +121,9 @@ describe('GET /api/pools/[code]/players', () => {
       expect(alice.totalPoints).toBe(50);
     });
 
-    it('does not expose participant secrets (security)', async () => {
+    it('does not expose raw secrets but includes recovery URLs (security)', async () => {
       const pool = await createTestPool({ inviteCode: 'PART04' });
+      await addPlayer(pool.id, 'Alice');
 
       const response = await getPlayersHandler(
         createGetRequest('PART04', pool.captainSecret),
@@ -131,8 +132,41 @@ describe('GET /api/pools/[code]/players', () => {
       );
 
       const data = await response.json();
-      // Secrets should never be exposed via API - even to captain
-      expect(data.players[0].secret).toBeUndefined();
+      // Raw secrets should never be exposed as a separate field
+      for (const player of data.players) {
+        expect(player.secret).toBeUndefined();
+        expect(player.recoveryUrl).toBeDefined();
+        expect(typeof player.recoveryUrl).toBe('string');
+      }
+    });
+
+    it('returns captain recovery URL pointing to captain page', async () => {
+      const pool = await createTestPool({ inviteCode: 'PART04B' });
+
+      const response = await getPlayersHandler(
+        createGetRequest('PART04B', pool.captainSecret),
+        'PART04B',
+        db
+      );
+
+      const data = await response.json();
+      const captain = data.players.find((p: { isCaptain: boolean }) => p.isCaptain);
+      expect(captain.recoveryUrl).toContain('/pool/PART04B/captain?secret=');
+    });
+
+    it('returns player recovery URL pointing to picks page', async () => {
+      const pool = await createTestPool({ inviteCode: 'PART04C' });
+      await addPlayer(pool.id, 'Alice');
+
+      const response = await getPlayersHandler(
+        createGetRequest('PART04C', pool.captainSecret),
+        'PART04C',
+        db
+      );
+
+      const data = await response.json();
+      const alice = data.players.find((p: { name: string }) => p.name === 'Alice');
+      expect(alice.recoveryUrl).toContain('/pool/PART04C/picks?secret=');
     });
 
     it('returns participants sorted by name', async () => {
@@ -167,9 +201,9 @@ describe('GET /api/pools/[code]/players', () => {
     });
   });
 
-  describe('Draft Pool Access', () => {
-    it('returns participants for captain in draft pool', async () => {
-      const pool = await createTestPool({ inviteCode: 'PART07', status: 'draft' });
+  describe('Open Pool Access', () => {
+    it('returns participants for captain in open pool', async () => {
+      const pool = await createTestPool({ inviteCode: 'PART07', status: 'open' });
 
       const response = await getPlayersHandler(
         createGetRequest('PART07', pool.captainSecret),
@@ -183,7 +217,7 @@ describe('GET /api/pools/[code]/players', () => {
     });
 
     it('returns 401 for non-captain trying to view pool participants', async () => {
-      await createTestPool({ inviteCode: 'PART08', status: 'draft' });
+      await createTestPool({ inviteCode: 'PART08', status: 'open' });
 
       const response = await getPlayersHandler(
         createGetRequest('PART08'),

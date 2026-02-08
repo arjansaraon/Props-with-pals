@@ -13,7 +13,7 @@ export type Database = LibSQLDatabase<typeof schema>;
  * Exported for testing with injected database.
  */
 export async function getPlayersHandler(
-  request: NextRequest,
+  request: Request,
   code: string,
   database: Database
 ): Promise<Response> {
@@ -57,12 +57,23 @@ export async function getPlayersHandler(
       .where(eq(players.poolId, pool.id))
       .orderBy(players.name);
 
-    // Mark the captain in the list (using timing-safe comparison)
-    // Strip secrets from response - never expose participant secrets via API
-    const playersWithRole = playersList.map(({ secret, ...p }) => ({
-      ...p,
-      isCaptain: safeCompareSecrets(secret, pool.captainSecret),
-    }));
+    // Build recovery URLs so captain can share player-specific links
+    const requestUrl = new URL(request.url);
+    const origin = `${requestUrl.protocol}//${requestUrl.host}`;
+
+    // Mark the captain in the list and include recovery URLs
+    // Raw secrets are not exposed directly - they're embedded in recovery URLs
+    const playersWithRole = playersList.map(({ secret, ...p }) => {
+      const isCaptain = safeCompareSecrets(secret, pool.captainSecret);
+      const recoveryPath = isCaptain
+        ? `/pool/${code}/captain?secret=${secret}`
+        : `/pool/${code}/picks?secret=${secret}`;
+      return {
+        ...p,
+        isCaptain,
+        recoveryUrl: `${origin}${recoveryPath}`,
+      };
+    });
 
     return NextResponse.json({ players: playersWithRole }, { status: 200 });
   } catch (error) {

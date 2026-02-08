@@ -1,10 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { Badge } from '@/app/components/ui/badge';
 import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { CopyLinkButton } from '@/app/components/copy-link-button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/app/components/ui/tooltip';
 import { PoolStatusAction } from '@/app/components/pool-status-action';
 import { HelpCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -49,6 +49,7 @@ export function PoolHeader({
   tooltipInstructions,
   isCaptain = false,
 }: PoolHeaderProps) {
+  const [showHelp, setShowHelp] = useState(false);
   const statusVariant =
     poolStatus === 'open'
       ? 'success'
@@ -108,34 +109,34 @@ export function PoolHeader({
 
         {/* Action buttons */}
         <div className="flex flex-wrap gap-3">
-          <CopyLinkButton url={myLinkUrl} label="My link" />
+          <CopyLinkButton url={myLinkUrl} label="Copy my link" />
           <CopyLinkButton url={shareLinkUrl} label="Share pool" variant="outline" />
 
-          <TooltipProvider delayDuration={0}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button className="text-muted-foreground hover:text-foreground p-2 transition-colors">
-                  <HelpCircle className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs p-3">
-                <p className="font-medium mb-2">{tooltipTitle}</p>
-                <ol className="list-decimal list-inside space-y-1 text-sm">
-                  {tooltipInstructions.map((instruction, i) => (
-                    <li key={i}>{instruction}</li>
-                  ))}
-                </ol>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            className="text-muted-foreground hover:text-foreground p-2 transition-colors"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </button>
 
-          <Button variant="secondary" asChild className="gap-2 ml-auto">
+          <Button variant="secondary" asChild className="gap-2 sm:ml-auto">
             <Link href={`/pool/${poolCode}/leaderboard`}>
               View Leaderboard
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
         </div>
+
+        {showHelp && (
+          <div className="mt-3 rounded-lg bg-muted p-3">
+            <p className="font-medium mb-2">{tooltipTitle}</p>
+            <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+              {tooltipInstructions.map((instruction, i) => (
+                <li key={i}>{instruction}</li>
+              ))}
+            </ol>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

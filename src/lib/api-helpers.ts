@@ -28,7 +28,7 @@ export type PoolAuthResult =
  */
 export async function getPoolWithAuth(
   code: string,
-  request: NextRequest,
+  request: Request,
   database: Database,
   options: { requireCaptain?: boolean } = {}
 ): Promise<PoolAuthResult> {

@@ -3,6 +3,7 @@
 import { Spinner } from '@/app/components/spinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
+import { CopyLinkButton } from '@/app/components/copy-link-button';
 import type { Player } from '../types';
 
 interface PlayersTabProps {
@@ -38,7 +39,12 @@ export function PlayersTab({ code, players, isLoading }: PlayersTabProps) {
                   <span className="font-medium text-foreground">{player.name}</span>
                   {player.isCaptain && <Badge variant="secondary">Captain</Badge>}
                 </div>
-                <p className="text-sm text-muted-foreground">{player.totalPoints} pts</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-sm text-muted-foreground">{player.totalPoints} pts</p>
+                  {player.recoveryUrl && (
+                    <CopyLinkButton url={player.recoveryUrl} variant="compact" />
+                  )}
+                </div>
               </div>
             ))}
           </div>

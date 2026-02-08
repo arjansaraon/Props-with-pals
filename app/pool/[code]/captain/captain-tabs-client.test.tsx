@@ -390,7 +390,7 @@ describe('CaptainTabsClient', () => {
     // Note: handleLockPool tests removed - functionality moved to PoolStatusAction component
 
     describe('handleResolve', () => {
-      it('calls POST /api/pools/[code]/props/[propId]/resolve', async () => {
+      it('calls POST /api/pools/[code]/props/[propId]/resolve after confirmation', async () => {
         const user = userEvent.setup();
         mockFetch.mockResolvedValueOnce(mockFetchResponse({ success: true }));
 
@@ -402,8 +402,13 @@ describe('CaptainTabsClient', () => {
           />
         );
 
+        // Click "Mark Correct" to open confirmation dialog
         const markCorrectButtons = screen.getAllByRole('button', { name: /mark correct/i });
         await user.click(markCorrectButtons[0]);
+
+        // Click "Confirm" in the dialog
+        const confirmButton = await screen.findByRole('button', { name: /confirm/i });
+        await user.click(confirmButton);
 
         await waitFor(() => {
           expect(mockFetch).toHaveBeenCalledWith(
@@ -428,8 +433,13 @@ describe('CaptainTabsClient', () => {
           />
         );
 
+        // Click "Mark Correct" to open confirmation dialog
         const markCorrectButtons = screen.getAllByRole('button', { name: /mark correct/i });
         await user.click(markCorrectButtons[0]);
+
+        // Click "Confirm" in the dialog
+        const confirmButton = await screen.findByRole('button', { name: /confirm/i });
+        await user.click(confirmButton);
 
         await waitFor(() => {
           expect(mockShowToast).toHaveBeenCalledWith('Prop resolved! Points have been awarded.', 'success');

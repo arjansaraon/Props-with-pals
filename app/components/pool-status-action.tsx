@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Badge } from '@/app/components/ui/badge';
 import { Button } from '@/app/components/ui/button';
 import { Spinner } from '@/app/components/spinner';
@@ -13,6 +14,7 @@ interface PoolStatusActionProps {
 }
 
 export function PoolStatusAction({ code, initialStatus, onStatusChange }: PoolStatusActionProps) {
+  const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,6 +34,7 @@ export function PoolStatusAction({ code, initialStatus, onStatusChange }: PoolSt
     if (res.ok) {
       setStatus('locked');
       onStatusChange?.('locked');
+      router.refresh();
     }
     setIsLoading(false);
   };
@@ -46,6 +49,7 @@ export function PoolStatusAction({ code, initialStatus, onStatusChange }: PoolSt
     if (res.ok) {
       setStatus('completed');
       onStatusChange?.('completed');
+      router.refresh();
     }
     setIsLoading(false);
   };

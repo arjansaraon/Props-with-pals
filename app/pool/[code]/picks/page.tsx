@@ -4,25 +4,25 @@ import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 import { PicksClient } from "./picks-client";
 import { getPoolSecret } from "@/src/lib/auth";
-import { CopyLinkButton } from "@/app/components/copy-link-button";
 import { Card, CardContent } from "@/app/components/ui/card";
 import { Alert, AlertDescription } from "@/app/components/ui/alert";
 import { PoolHeader } from "@/app/components/pool-header";
-import { AlertCircle, Lock, AlertTriangle, CheckCircle } from "lucide-react";
+import { AlertCircle, Lock, AlertTriangle } from "lucide-react";
+import { RecoveryHandler } from "./recovery-handler";
 
 export default async function PlayerPicks({
   params,
   searchParams,
 }: {
   params: Promise<{ code: string }>;
-  searchParams: Promise<{ welcome?: string }>;
+  searchParams: Promise<{ secret?: string }>;
 }) {
   const { code } = await params;
-  const { welcome } = await searchParams;
-  const isNewJoin = welcome === "true";
+  const { secret: querySecret } = await searchParams;
 
-  // Get secret from cookie (secure, httpOnly - no URL fallback)
-  const secret = await getPoolSecret(code);
+  // Get secret from cookie (preferred) or query param (recovery fallback)
+  const cookieSecret = await getPoolSecret(code);
+  const secret = cookieSecret || querySecret || null;
 
   // Get host for building pool link (no secret - auth via cookie)
   const headersList = await headers();
@@ -124,22 +124,16 @@ export default async function PlayerPicks({
           </Alert>
         )}
 
-        {!participant && (
+        {!participant && querySecret && (
+          <RecoveryHandler code={code} />
+        )}
+
+        {!participant && !querySecret && (
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               Invalid or missing participant secret. Please use the link you
               received when joining.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {isNewJoin && participant && (
-          <Alert className="mb-6 border-emerald-200 bg-emerald-50">
-            <CheckCircle className="h-4 w-4 text-emerald-600" />
-            <AlertDescription className="text-emerald-800 flex items-center gap-2 flex-wrap">
-              You&apos;re in! Save your link to return later:
-              <CopyLinkButton url={poolLink} label="Copy my link" />
             </AlertDescription>
           </Alert>
         )}

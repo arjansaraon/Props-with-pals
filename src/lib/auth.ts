@@ -61,7 +61,7 @@ export async function getPoolSecret(code: string): Promise<string | null> {
  * In production, cookies are the only auth mechanism.
  * Query params are only used in development/test environments.
  */
-export async function getSecret(code: string, request: NextRequest): Promise<string | null> {
+export async function getSecret(code: string, request: Request): Promise<string | null> {
   // Try cookies first (preferred and required in production)
   const cookieSecret = await getPoolSecret(code);
   if (cookieSecret) {
@@ -169,7 +169,7 @@ export async function clearPoolSecretCookie(
  * Returns true if the request is from an allowed origin.
  * Requires at least one of Origin or Referer headers to be present.
  */
-export function validateOrigin(request: NextRequest): boolean {
+export function validateOrigin(request: Request): boolean {
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
 
@@ -216,7 +216,7 @@ export function validateOrigin(request: NextRequest): boolean {
  * CSRF protection middleware for mutations.
  * Returns an error response if CSRF check fails, null if valid.
  */
-export function requireValidOrigin(request: NextRequest): NextResponse | null {
+export function requireValidOrigin(request: Request): NextResponse | null {
   if (!validateOrigin(request)) {
     return NextResponse.json(
       { code: 'CSRF_ERROR', message: 'Invalid request origin' },

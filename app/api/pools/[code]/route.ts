@@ -16,7 +16,7 @@ export type { Database };
  * Exported for testing with injected database.
  */
 export async function getPoolHandler(
-  request: NextRequest,
+  request: Request,
   code: string,
   database: Database
 ): Promise<Response> {
@@ -45,7 +45,7 @@ export async function getPoolHandler(
  * Exported for testing with injected database.
  */
 export async function updatePoolHandler(
-  request: NextRequest,
+  request: Request,
   code: string,
   database: Database
 ): Promise<Response> {

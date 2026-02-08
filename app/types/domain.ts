@@ -25,6 +25,7 @@ export interface Player {
   totalPoints: number;
   joinedAt: string;
   isCaptain: boolean;
+  recoveryUrl?: string;
 }
 
 /**

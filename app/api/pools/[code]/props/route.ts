@@ -14,7 +14,7 @@ export type Database = LibSQLDatabase<typeof schema>;
  * Exported for testing with injected database.
  */
 export async function createPropHandler(
-  request: NextRequest,
+  request: Request,
   code: string,
   database: Database
 ): Promise<Response> {

@@ -18,7 +18,7 @@ export type { Database };
  * Exported for testing with injected database.
  */
 export async function updatePropHandler(
-  request: NextRequest,
+  request: Request,
   code: string,
   propId: string,
   database: Database
@@ -108,7 +108,7 @@ export async function updatePropHandler(
  * Exported for testing with injected database.
  */
 export async function deletePropHandler(
-  request: NextRequest,
+  request: Request,
   code: string,
   propId: string,
   database: Database

@@ -174,7 +174,7 @@ export function PropCard({
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-lg font-medium text-foreground">{prop.questionText}</h3>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{prop.pointValue} pts</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">{prop.pointValue} pts</span>
             {poolStatus === 'open' && (
               <Button
                 size="sm"

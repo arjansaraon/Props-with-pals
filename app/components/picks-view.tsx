@@ -88,7 +88,7 @@ export function PicksView({
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">{prop.questionText}</CardTitle>
-                  <span className="text-sm text-muted-foreground">{prop.pointValue} pts</span>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">{prop.pointValue} pts</span>
                 </div>
               </CardHeader>
               <CardContent>

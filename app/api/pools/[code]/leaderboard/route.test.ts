@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { setupTestDb } from '@/src/lib/test-db';
-import { pools, players } from '@/src/lib/schema';
+import { pools, players, props } from '@/src/lib/schema';
 import { getLeaderboardHandler, type Database } from './route';
 
 // Helper to create a mock GET Request
@@ -226,6 +226,156 @@ describe('GET /api/pools/[code]/leaderboard', () => {
       expect(response.status).toBe(200);
       const data = await response.json();
       expect(data.leaderboard).toHaveLength(0);
+    });
+  });
+
+  describe('isCaptain field', () => {
+    it('marks player as captain when their secret matches pool captainSecret', async () => {
+      const now = new Date().toISOString();
+      const captainSecret = crypto.randomUUID();
+      const poolId = crypto.randomUUID();
+
+      await db.insert(pools).values({
+        id: poolId,
+        name: 'Test Pool',
+        inviteCode: 'LEAD10',
+        captainName: 'Captain Jane',
+        captainSecret,
+        status: 'open',
+        buyInAmount: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      // Captain player (secret matches captainSecret)
+      await db.insert(players).values({
+        id: crypto.randomUUID(),
+        poolId,
+        name: 'Captain Jane',
+        secret: captainSecret,
+        totalPoints: 10,
+        paid: null,
+        status: 'active',
+        joinedAt: now,
+        updatedAt: now,
+      });
+
+      // Regular player
+      await db.insert(players).values({
+        id: crypto.randomUUID(),
+        poolId,
+        name: 'Regular Bob',
+        secret: crypto.randomUUID(),
+        totalPoints: 20,
+        paid: null,
+        status: 'active',
+        joinedAt: now,
+        updatedAt: now,
+      });
+
+      const response = await getLeaderboardHandler(createRequest('LEAD10'), 'LEAD10', db);
+      const data = await response.json();
+
+      const captain = data.leaderboard.find((p: { name: string }) => p.name === 'Captain Jane');
+      const regular = data.leaderboard.find((p: { name: string }) => p.name === 'Regular Bob');
+
+      expect(captain.isCaptain).toBe(true);
+      expect(regular.isCaptain).toBe(false);
+    });
+  });
+
+  describe('hasResolvedProps field', () => {
+    it('returns false when no props have been resolved', async () => {
+      const now = new Date().toISOString();
+      const poolId = crypto.randomUUID();
+
+      await db.insert(pools).values({
+        id: poolId,
+        name: 'Test Pool',
+        inviteCode: 'LEAD11',
+        captainName: 'Captain',
+        captainSecret: crypto.randomUUID(),
+        status: 'locked',
+        buyInAmount: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      // Unresolved prop (correctOptionIndex is null)
+      await db.insert(props).values({
+        id: crypto.randomUUID(),
+        poolId,
+        questionText: 'Who will win?',
+        options: ['Team A', 'Team B'],
+        pointValue: 10,
+        correctOptionIndex: null,
+        status: 'active',
+        order: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const response = await getLeaderboardHandler(createRequest('LEAD11'), 'LEAD11', db);
+      const data = await response.json();
+
+      expect(data.hasResolvedProps).toBe(false);
+    });
+
+    it('returns true when at least one prop has been resolved', async () => {
+      const now = new Date().toISOString();
+      const poolId = crypto.randomUUID();
+
+      await db.insert(pools).values({
+        id: poolId,
+        name: 'Test Pool',
+        inviteCode: 'LEAD12',
+        captainName: 'Captain',
+        captainSecret: crypto.randomUUID(),
+        status: 'locked',
+        buyInAmount: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      // Resolved prop
+      await db.insert(props).values({
+        id: crypto.randomUUID(),
+        poolId,
+        questionText: 'Who will win?',
+        options: ['Team A', 'Team B'],
+        pointValue: 10,
+        correctOptionIndex: 0,
+        status: 'active',
+        order: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const response = await getLeaderboardHandler(createRequest('LEAD12'), 'LEAD12', db);
+      const data = await response.json();
+
+      expect(data.hasResolvedProps).toBe(true);
+    });
+
+    it('returns false when pool has no props', async () => {
+      const now = new Date().toISOString();
+
+      await db.insert(pools).values({
+        id: crypto.randomUUID(),
+        name: 'Empty Props Pool',
+        inviteCode: 'LEAD13',
+        captainName: 'Captain',
+        captainSecret: crypto.randomUUID(),
+        status: 'open',
+        buyInAmount: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const response = await getLeaderboardHandler(createRequest('LEAD13'), 'LEAD13', db);
+      const data = await response.json();
+
+      expect(data.hasResolvedProps).toBe(false);
     });
   });
 });

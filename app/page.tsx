@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveUserSession } from '@/src/lib/user-session';
+import { INVITE_CODE_CHARS } from '@/src/lib/invite-code';
 import { Spinner } from '@/app/components/spinner';
 import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
@@ -10,6 +11,16 @@ import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { AlertCircle, X, ChevronDown, ChevronUp } from 'lucide-react';
+
+function generateSuggestedCode(): string {
+  const length = 6;
+  const randomBytes = new Uint8Array(length);
+  crypto.getRandomValues(randomBytes);
+  return Array.from(randomBytes)
+    .map((byte) => INVITE_CODE_CHARS[byte % INVITE_CODE_CHARS.length])
+    .join('')
+    .toLowerCase();
+}
 
 // Normalize a name for use in invite code prefix (same as server)
 function normalizeNameForCode(name: string): string {
@@ -35,7 +46,7 @@ export default function Home() {
   const [name, setName] = useState('');
   const [captainName, setCaptainName] = useState('');
   const [buyInAmount, setBuyInAmount] = useState('');
-  const [customCode, setCustomCode] = useState('');
+  const [customCode, setCustomCode] = useState(() => generateSuggestedCode());
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -229,7 +240,7 @@ export default function Home() {
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Leave blank for auto-generated code. Your name will be prefixed automatically.
+                    A code has been suggested. Feel free to customize it.
                   </p>
                 </div>
 
