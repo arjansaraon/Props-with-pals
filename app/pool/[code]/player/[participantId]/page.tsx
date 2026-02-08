@@ -8,9 +8,9 @@ import { PlayerPicksView } from './player-picks-view';
 export default async function PlayerPicksPage({
   params,
 }: {
-  params: Promise<{ code: string; playerId: string }>;
+  params: Promise<{ code: string; participantId: string }>;
 }) {
-  const { code, playerId } = await params;
+  const { code, participantId } = await params;
 
   // Fetch pool
   const poolResult = await db
@@ -40,7 +40,7 @@ export default async function PlayerPicksPage({
     .from(players)
     .where(
       and(
-        eq(players.id, playerId),
+        eq(players.id, participantId),
         eq(players.poolId, pool.id)
       )
     )
