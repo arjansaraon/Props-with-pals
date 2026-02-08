@@ -80,6 +80,7 @@ export function CaptainTabsClient({
 
         <TabsContent value="picks">
           <PicksTab
+            code={code}
             poolStatus={poolStatus}
             propsList={propsList}
             picks={picks}

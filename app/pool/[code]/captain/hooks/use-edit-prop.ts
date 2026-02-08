@@ -14,6 +14,7 @@ interface EditFormState {
   questionText: string;
   options: string[];
   pointValue: string;
+  category: string;
 }
 
 interface UseEditPropReturn {
@@ -25,6 +26,7 @@ interface UseEditPropReturn {
   cancelEditing: () => void;
   setQuestionText: (value: string) => void;
   setPointValue: (value: string) => void;
+  setCategory: (value: string) => void;
   addOption: () => void;
   updateOption: (index: number, value: string) => void;
   removeOption: (index: number) => void;
@@ -40,6 +42,7 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
     questionText: '',
     options: ['', ''],
     pointValue: '10',
+    category: '',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [hasPicksWarning, setHasPicksWarning] = useState(false);
@@ -64,6 +67,7 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
       questionText: prop.questionText,
       options: [...prop.options],
       pointValue: String(prop.pointValue),
+      category: prop.category || '',
     });
   }
 
@@ -74,6 +78,7 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
       questionText: '',
       options: ['', ''],
       pointValue: '10',
+      category: '',
     });
   }
 
@@ -83,6 +88,10 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
 
   function setPointValue(value: string) {
     setEditForm((prev) => ({ ...prev, pointValue: value }));
+  }
+
+  function setCategory(value: string) {
+    setEditForm((prev) => ({ ...prev, category: value }));
   }
 
   function addOption() {
@@ -122,6 +131,7 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
           questionText: editForm.questionText,
           options: editForm.options.filter((o) => o.trim() !== ''),
           pointValue: parseInt(editForm.pointValue, 10),
+          category: editForm.category.trim() || undefined,
         }),
       });
 
@@ -150,6 +160,7 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
     cancelEditing,
     setQuestionText,
     setPointValue,
+    setCategory,
     addOption,
     updateOption,
     removeOption,

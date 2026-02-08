@@ -24,6 +24,7 @@ interface EditFormState {
   questionText: string;
   options: string[];
   pointValue: string;
+  category: string;
 }
 
 interface PropCardProps {
@@ -35,6 +36,7 @@ interface PropCardProps {
   hasPicksWarning: boolean;
   resolvingPropId: string | null;
   deletingPropId: string | null;
+  existingCategories?: string[];
   dragHandleProps?: Record<string, unknown>;
   onStartEditing: (prop: Prop) => Promise<void>;
   onCancelEditing: () => void;
@@ -43,6 +45,7 @@ interface PropCardProps {
   onDelete: (propId: string) => void;
   onQuestionChange: (value: string) => void;
   onPointValueChange: (value: string) => void;
+  onCategoryChange: (value: string) => void;
   onAddOption: () => void;
   onUpdateOption: (index: number, value: string) => void;
   onRemoveOption: (index: number) => void;
@@ -57,6 +60,7 @@ export function PropCard({
   hasPicksWarning,
   resolvingPropId,
   deletingPropId,
+  existingCategories = [],
   dragHandleProps,
   onStartEditing,
   onCancelEditing,
@@ -65,6 +69,7 @@ export function PropCard({
   onDelete,
   onQuestionChange,
   onPointValueChange,
+  onCategoryChange,
   onAddOption,
   onUpdateOption,
   onRemoveOption,
@@ -150,6 +155,25 @@ export function PropCard({
                 min="1"
                 className="w-32"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Category (Optional)</Label>
+              <Input
+                type="text"
+                value={editForm.category}
+                onChange={(e) => onCategoryChange(e.target.value)}
+                placeholder="e.g., First Quarter, Halftime"
+                list="edit-category-suggestions"
+                maxLength={50}
+              />
+              {existingCategories.length > 0 && (
+                <datalist id="edit-category-suggestions">
+                  {existingCategories.map((cat) => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+              )}
             </div>
 
             <div className="flex gap-2">

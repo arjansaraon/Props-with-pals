@@ -41,10 +41,11 @@ interface SortablePropCardProps {
   poolStatus: string;
   editProp: EditPropReturn;
   adminActions: AdminActionsReturn;
+  existingCategories: string[];
   isDndEnabled: boolean;
 }
 
-function SortablePropCard({ prop, poolStatus, editProp, adminActions, isDndEnabled }: SortablePropCardProps) {
+function SortablePropCard({ prop, poolStatus, editProp, adminActions, existingCategories, isDndEnabled }: SortablePropCardProps) {
   const {
     attributes,
     listeners,
@@ -76,6 +77,7 @@ function SortablePropCard({ prop, poolStatus, editProp, adminActions, isDndEnabl
         hasPicksWarning={editProp.hasPicksWarning}
         resolvingPropId={adminActions.resolvingPropId}
         deletingPropId={adminActions.deletingPropId}
+        existingCategories={existingCategories}
         dragHandleProps={handleProps}
         onStartEditing={editProp.startEditing}
         onCancelEditing={editProp.cancelEditing}
@@ -84,6 +86,7 @@ function SortablePropCard({ prop, poolStatus, editProp, adminActions, isDndEnabl
         onDelete={adminActions.handleDeleteProp}
         onQuestionChange={editProp.setQuestionText}
         onPointValueChange={editProp.setPointValue}
+        onCategoryChange={editProp.setCategory}
         onAddOption={editProp.addOption}
         onUpdateOption={editProp.updateOption}
         onRemoveOption={editProp.removeOption}
@@ -124,6 +127,7 @@ interface EditFormState {
   questionText: string;
   options: string[];
   pointValue: string;
+  category: string;
 }
 
 interface EditPropReturn {
@@ -135,6 +139,7 @@ interface EditPropReturn {
   cancelEditing: () => void;
   setQuestionText: (value: string) => void;
   setPointValue: (value: string) => void;
+  setCategory: (value: string) => void;
   addOption: () => void;
   updateOption: (index: number, value: string) => void;
   removeOption: (index: number) => void;
@@ -187,6 +192,7 @@ export function AdminTab({
                 poolStatus={poolStatus}
                 editProp={editProp}
                 adminActions={adminActions}
+                existingCategories={existingCategories}
                 isDndEnabled={isDndEnabled}
               />
             ))}
