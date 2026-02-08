@@ -13,10 +13,12 @@ interface UseAddPropFormReturn {
   questionText: string;
   options: string[];
   pointValue: string;
+  category: string;
   isAddingProp: boolean;
   isFormOpen: boolean;
   setQuestionText: (value: string) => void;
   setPointValue: (value: string) => void;
+  setCategory: (value: string) => void;
   setIsFormOpen: (value: boolean) => void;
   addOption: () => void;
   updateOption: (index: number, value: string) => void;
@@ -31,6 +33,7 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
   const [questionText, setQuestionText] = useState('');
   const [options, setOptions] = useState(['', '']);
   const [pointValue, setPointValue] = useState('10');
+  const [category, setCategory] = useState('');
   const [isAddingProp, setIsAddingProp] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
@@ -65,6 +68,7 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
           questionText,
           options: options.filter((o) => o.trim() !== ''),
           pointValue: parseInt(pointValue, 10),
+          category: category.trim() || undefined,
         }),
       });
 
@@ -77,6 +81,7 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
       setQuestionText('');
       setOptions(['', '']);
       setPointValue('10');
+      setCategory('');
       setIsFormOpen(false);
       showToast('Prop added successfully', 'success');
       router.refresh();
@@ -91,10 +96,12 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
     questionText,
     options,
     pointValue,
+    category,
     isAddingProp,
     isFormOpen,
     setQuestionText,
     setPointValue,
+    setCategory,
     setIsFormOpen,
     addOption,
     updateOption,

@@ -81,11 +81,10 @@ export default function JoinPool({
       // Save user session to localStorage (cookie auth handles the secret)
       saveUserSession(code, { name, isCaptain: false });
 
-      // Redirect directly to picks with welcome banner (auth is handled by httpOnly cookie)
+      // Redirect directly to picks (keep loading state until page transitions)
       router.push(`/pool/${code}/picks?welcome=true`);
     } catch {
       setError('Failed to join pool. Please try again.');
-    } finally {
       setIsJoining(false);
     }
   }

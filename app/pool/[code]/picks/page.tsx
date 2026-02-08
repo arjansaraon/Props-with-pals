@@ -156,6 +156,7 @@ export default async function PlayerPicks({
               options: p.options as string[],
               pointValue: p.pointValue,
               correctOptionIndex: p.correctOptionIndex,
+              category: p.category,
             }))}
             initialPicks={myPicks}
             poolStatus={pool.status}

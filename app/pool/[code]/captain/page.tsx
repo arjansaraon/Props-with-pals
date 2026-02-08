@@ -126,6 +126,7 @@ export default async function CaptainDashboard({
             correctOptionIndex: p.correctOptionIndex,
             status: p.status,
             order: p.order,
+            category: p.category,
           }))}
           initialPicks={myPicks}
         />

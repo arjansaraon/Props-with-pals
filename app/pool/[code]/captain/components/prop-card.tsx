@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/app/components/ui/alert-dialog';
-import { Plus, Trash2, Check, Pencil, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Check, Pencil, AlertTriangle, GripVertical } from 'lucide-react';
 import type { Prop } from '@/app/types/domain';
 
 interface EditFormState {
@@ -34,6 +34,7 @@ interface PropCardProps {
   isSaving: boolean;
   hasPicksWarning: boolean;
   resolvingPropId: string | null;
+  dragHandleProps?: Record<string, unknown>;
   onStartEditing: (prop: Prop) => Promise<void>;
   onCancelEditing: () => void;
   onSaveChanges: () => Promise<void>;
@@ -53,6 +54,7 @@ export function PropCard({
   isSaving,
   hasPicksWarning,
   resolvingPropId,
+  dragHandleProps,
   onStartEditing,
   onCancelEditing,
   onSaveChanges,
@@ -172,7 +174,18 @@ export function PropCard({
     <Card className="shadow-lg">
       <CardContent className="pt-6">
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-lg font-medium text-foreground">{prop.questionText}</h3>
+          <div className="flex items-start gap-2 flex-1 min-w-0">
+            {dragHandleProps && (
+              <button
+                type="button"
+                className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+                {...dragHandleProps}
+              >
+                <GripVertical className="h-5 w-5" />
+              </button>
+            )}
+            <h3 className="text-lg font-medium text-foreground">{prop.questionText}</h3>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">{prop.pointValue} pts</span>
             {poolStatus === 'open' && (

@@ -12,10 +12,13 @@ interface AddPropFormProps {
   questionText: string;
   options: string[];
   pointValue: string;
+  category: string;
+  existingCategories: string[];
   isAddingProp: boolean;
   onOpenChange: (open: boolean) => void;
   onQuestionChange: (value: string) => void;
   onPointValueChange: (value: string) => void;
+  onCategoryChange: (value: string) => void;
   onAddOption: () => void;
   onUpdateOption: (index: number, value: string) => void;
   onRemoveOption: (index: number) => void;
@@ -27,10 +30,13 @@ export function AddPropForm({
   questionText,
   options,
   pointValue,
+  category,
+  existingCategories,
   isAddingProp,
   onOpenChange,
   onQuestionChange,
   onPointValueChange,
+  onCategoryChange,
   onAddOption,
   onUpdateOption,
   onRemoveOption,
@@ -109,6 +115,25 @@ export function AddPropForm({
               required
               className="w-32"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Category (Optional)</Label>
+            <Input
+              type="text"
+              value={category}
+              onChange={(e) => onCategoryChange(e.target.value)}
+              placeholder="e.g., First Quarter, Halftime"
+              list="category-suggestions"
+              maxLength={50}
+            />
+            {existingCategories.length > 0 && (
+              <datalist id="category-suggestions">
+                {existingCategories.map((cat) => (
+                  <option key={cat} value={cat} />
+                ))}
+              </datalist>
+            )}
           </div>
 
           <Button type="submit" disabled={isAddingProp}>

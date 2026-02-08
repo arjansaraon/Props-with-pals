@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { usePicks } from '@/app/hooks/use-picks';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
 import { AlertCircle } from 'lucide-react';
 import type { CaptainTabsClientProps } from './types';
-import { usePlayers, useAddPropForm, useAdminActions, useEditProp } from './hooks';
+import { usePlayers, useAddPropForm, useAdminActions, useEditProp, useReorderProps } from './hooks';
 import { AdminTab, PicksTab, PlayersTab } from './components';
 
 export function CaptainTabsClient({
@@ -41,6 +41,15 @@ export function CaptainTabsClient({
     shouldLoad: activeTab === 'players',
   });
 
+  // Drag-and-drop reorder (via hook)
+  const { orderedProps, handleDragEnd } = useReorderProps({ code, propsList });
+
+  // Existing categories for autocomplete
+  const existingCategories = useMemo(
+    () => [...new Set(orderedProps.map((p) => p.category).filter(Boolean))] as string[],
+    [orderedProps]
+  );
+
   return (
     <>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -60,10 +69,12 @@ export function CaptainTabsClient({
         <TabsContent value="admin">
           <AdminTab
             poolStatus={poolStatus}
-            propsList={propsList}
+            propsList={orderedProps}
             adminActions={adminActions}
             addPropForm={addPropForm}
             editProp={editProp}
+            existingCategories={existingCategories}
+            onDragEnd={handleDragEnd}
           />
         </TabsContent>
 

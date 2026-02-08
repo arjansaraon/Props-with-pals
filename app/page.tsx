@@ -69,11 +69,10 @@ export default function Home() {
         return;
       }
 
-      // Navigate to the pool join page
+      // Navigate to the pool join page (keep loading state until page transitions)
       router.push(`/pool/${normalizedCode}`);
     } catch {
       setJoinError('Failed to find pool. Please try again.');
-    } finally {
       setIsJoining(false);
     }
   }
@@ -105,11 +104,10 @@ export default function Home() {
       // Save user session to localStorage (cookie auth handles the secret)
       saveUserSession(data.inviteCode, { name: captainName, isCaptain: true });
 
-      // Redirect to captain dashboard (cookie has the secret)
+      // Redirect to captain dashboard (keep loading state until page transitions)
       router.push(`/pool/${data.inviteCode}/captain`);
     } catch {
       setCreateError('Failed to create pool. Please try again.');
-    } finally {
       setIsCreating(false);
     }
   }

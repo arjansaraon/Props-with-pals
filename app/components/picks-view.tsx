@@ -7,6 +7,22 @@ import { Progress } from '@/app/components/ui/progress';
 import { AlertCircle, Check, X, Lock } from 'lucide-react';
 import type { Prop, SubmittingState } from '@/app/types/domain';
 
+function groupPropsByCategory(props: Prop[]): { category: string | null; props: Prop[] }[] {
+  const groups: Map<string | null, Prop[]> = new Map();
+  for (const prop of props) {
+    const key = prop.category || null;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(prop);
+  }
+  const result: { category: string | null; props: Prop[] }[] = [];
+  const uncategorized = groups.get(null);
+  if (uncategorized) result.push({ category: null, props: uncategorized });
+  for (const [key, value] of groups) {
+    if (key !== null) result.push({ category: key, props: value });
+  }
+  return result;
+}
+
 interface PicksViewProps {
   poolStatus: string;
   propsList: Prop[];
@@ -75,87 +91,98 @@ export function PicksView({
           </CardContent>
         </Card>
       ) : (
-        propsList.map((prop) => {
-          const myPick = myPicks.get(prop.id);
-          const isResolved = prop.correctOptionIndex !== null;
-          const hasError = pickErrorPropId === prop.id;
+        groupPropsByCategory(propsList).map((group) => (
+          <div key={group.category ?? '__uncategorized'}>
+            {group.category && (
+              <div className="flex items-center gap-2 mt-4 mb-2">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-sm font-medium text-muted-foreground px-2">{group.category}</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+            )}
+            {group.props.map((prop) => {
+              const myPick = myPicks.get(prop.id);
+              const isResolved = prop.correctOptionIndex !== null;
+              const hasError = pickErrorPropId === prop.id;
 
-          return (
-            <Card
-              key={prop.id}
-              className={`shadow-lg ${hasError ? 'ring-2 ring-destructive' : ''}`}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{prop.questionText}</CardTitle>
-                  <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">{prop.pointValue} pts</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {hasError && (
-                  <Alert variant="destructive" className="mb-3">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>Failed to save pick. Please try again.</AlertDescription>
-                  </Alert>
-                )}
+              return (
+                <Card
+                  key={prop.id}
+                  className={`shadow-lg ${hasError ? 'ring-2 ring-destructive' : ''}`}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-lg">{prop.questionText}</CardTitle>
+                      <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">{prop.pointValue} pts</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {hasError && (
+                      <Alert variant="destructive" className="mb-3">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>Failed to save pick. Please try again.</AlertDescription>
+                      </Alert>
+                    )}
 
-                <div className="space-y-2">
-                  {prop.options.map((option, index) => {
-                    const isSelected = myPick === index;
-                    const isCorrect = isResolved && prop.correctOptionIndex === index;
-                    const isWrong = isResolved && isSelected && prop.correctOptionIndex !== index;
-                    const isSaving = submitting?.propId === prop.id && submitting?.index === index;
+                    <div className="space-y-2">
+                      {prop.options.map((option, index) => {
+                        const isSelected = myPick === index;
+                        const isCorrect = isResolved && prop.correctOptionIndex === index;
+                        const isWrong = isResolved && isSelected && prop.correctOptionIndex !== index;
+                        const isSaving = submitting?.propId === prop.id && submitting?.index === index;
 
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => handlePick(prop.id, index)}
-                        disabled={poolStatus !== 'open' || submitting !== null}
-                        className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
-                          isCorrect
-                            ? 'border-emerald-500 bg-emerald-50'
-                            : isWrong
-                              ? 'border-destructive bg-red-50'
-                              : isSelected
-                                ? 'border-primary bg-primary/10'
-                                : 'bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/20'
-                        } ${poolStatus !== 'open' ? 'cursor-default' : 'cursor-pointer'}`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => handlePick(prop.id, index)}
+                            disabled={poolStatus !== 'open' || submitting !== null}
+                            className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
                               isCorrect
-                                ? 'text-emerald-800'
+                                ? 'border-emerald-500 bg-emerald-50'
                                 : isWrong
-                                  ? 'text-destructive'
-                                  : 'text-foreground'
-                            }
+                                  ? 'border-destructive bg-red-50'
+                                  : isSelected
+                                    ? 'border-primary bg-primary/10'
+                                    : 'bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/20'
+                            } ${poolStatus !== 'open' ? 'cursor-default' : 'cursor-pointer'}`}
                           >
-                            {option}
-                          </span>
-                          {isSaving && <Spinner size="sm" />}
-                          {!isSaving && isSelected && !isResolved && (
-                            <span className="text-primary text-sm">Your pick</span>
-                          )}
-                          {isCorrect && (
-                            <span className="text-emerald-600 text-sm flex items-center gap-1">
-                              <Check className="h-4 w-4" /> Correct
-                            </span>
-                          )}
-                          {isWrong && (
-                            <span className="text-destructive text-sm flex items-center gap-1">
-                              <X className="h-4 w-4" /> Wrong
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })
+                            <div className="flex items-center justify-between">
+                              <span
+                                className={
+                                  isCorrect
+                                    ? 'text-emerald-800'
+                                    : isWrong
+                                      ? 'text-destructive'
+                                      : 'text-foreground'
+                                }
+                              >
+                                {option}
+                              </span>
+                              {isSaving && <Spinner size="sm" />}
+                              {!isSaving && isSelected && !isResolved && (
+                                <span className="text-primary text-sm">Your pick</span>
+                              )}
+                              {isCorrect && (
+                                <span className="text-emerald-600 text-sm flex items-center gap-1">
+                                  <Check className="h-4 w-4" /> Correct
+                                </span>
+                              )}
+                              {isWrong && (
+                                <span className="text-destructive text-sm flex items-center gap-1">
+                                  <X className="h-4 w-4" /> Wrong
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        ))
       )}
 
       {/* Optional children slot for submit button */}

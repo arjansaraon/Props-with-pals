@@ -14,6 +14,7 @@ export interface Prop {
   correctOptionIndex: number | null;
   status?: string;
   order?: number;
+  category?: string | null;
 }
 
 /**
