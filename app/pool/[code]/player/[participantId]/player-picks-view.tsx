@@ -118,23 +118,19 @@ export function PlayerPicksView({
                     <div
                       key={index}
                       className={`px-4 py-3 rounded-lg border-2 ${
-                        isCorrectOption
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : isWrongSelection
-                            ? 'border-destructive bg-red-50'
-                            : isSelected
-                              ? 'border-primary bg-accent'
-                              : 'border-border'
+                        isWrongSelection
+                          ? 'border-destructive bg-red-50'
+                          : isSelected && !isResolved
+                            ? 'border-primary bg-accent'
+                            : 'border-border'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <span
                           className={
-                            isCorrectOption
-                              ? 'text-emerald-800'
-                              : isWrongSelection
-                                ? 'text-destructive'
-                                : 'text-foreground'
+                            isWrongSelection
+                              ? 'text-destructive'
+                              : 'text-foreground'
                           }
                         >
                           {option}
@@ -142,15 +138,8 @@ export function PlayerPicksView({
                         {isSelected && !isResolved && (
                           <span className="text-primary text-sm">Their pick</span>
                         )}
-                        {isCorrectOption && isSelected && (
-                          <span className="text-emerald-600 text-sm flex items-center gap-1">
-                            <Check className="h-4 w-4" /> Correct
-                          </span>
-                        )}
-                        {isCorrectOption && !isSelected && (
-                          <span className="text-emerald-600 text-sm flex items-center gap-1">
-                            <Check className="h-4 w-4" /> Answer
-                          </span>
+                        {isCorrectOption && (
+                          <Check className="h-4 w-4 text-muted-foreground" />
                         )}
                         {isWrongSelection && (
                           <span className="text-destructive text-sm flex items-center gap-1">
