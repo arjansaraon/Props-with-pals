@@ -15,7 +15,6 @@ global.fetch = mockFetch;
 describe('usePicks', () => {
   const defaultProps = {
     code: 'ABC123',
-    secret: 'test-secret',
     initialPicks: [],
     poolStatus: 'open',
     totalProps: 3,

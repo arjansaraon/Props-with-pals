@@ -1,0 +1,22 @@
+CAPTAIN
+tooltip doesn't work
+pool status and lock pool should be in the top right corner don't duplciate without intention (add that to rules)
+we need 'copy my link' and 'share invite link [copy]' in that same box
+Leaderboard should be the main call to action, i liked the arrow
+get rid of warning on the bottom
+
+Add prop has two +s
+Add prop isn't working, but should continue to show, you still save each one individually
+
+PLAYER
+Should match the info on the captains page but this size
+"Copy my link"
+"Share my link"
+Should also have a tooltip
+Pick saved toaster is still showing up (for both?)
+
+Based on what I'm seeing there's plenty of room to merge the headers UI too, there are only small differences, they don't need to drift apart
+
+LEADERBOARD
+no captain badge
+view other's picks doesn't seem to be implemented

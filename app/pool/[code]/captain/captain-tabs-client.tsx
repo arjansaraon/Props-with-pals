@@ -14,7 +14,6 @@ export function CaptainTabsClient({
   poolStatus,
   propsList,
   initialPicks,
-  secret,
 }: CaptainTabsClientProps) {
   const [activeTab, setActiveTab] = useState('admin');
   const [error, setError] = useState('');
@@ -31,7 +30,6 @@ export function CaptainTabsClient({
   // Picks state (via hook)
   const picks = usePicks({
     code,
-    secret,
     initialPicks,
     poolStatus,
     totalProps: propsList.length,

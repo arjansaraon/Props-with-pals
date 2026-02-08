@@ -14,7 +14,6 @@ interface SubmittingState {
 
 interface UsePicksProps {
   code: string;
-  secret: string;
   initialPicks: InitialPick[];
   poolStatus: string;
   totalProps: number;
@@ -33,7 +32,6 @@ interface UsePicksReturn {
 
 export function usePicks({
   code,
-  secret,
   initialPicks,
   poolStatus,
   totalProps,
@@ -59,29 +57,7 @@ export function usePicks({
     setSubmitting({ propId, index: selectedOptionIndex });
     setPickErrorPropId(null);
 
-    try {
-      // Auth is handled by httpOnly cookie, no need to pass secret in URL
-      const response = await fetch(`/api/pools/${code}/picks`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propId, selectedOptionIndex }),
-      });
-
-      if (!response.ok) {
-        setMyPicks((prev) => {
-          const newMap = new Map(prev);
-          if (previousPick !== undefined) {
-            newMap.set(propId, previousPick);
-          } else {
-            newMap.delete(propId);
-          }
-          return newMap;
-        });
-        setPickErrorPropId(propId);
-        return;
-      }
-    } catch {
+    function rollback() {
       setMyPicks((prev) => {
         const newMap = new Map(prev);
         if (previousPick !== undefined) {
@@ -92,6 +68,23 @@ export function usePicks({
         return newMap;
       });
       setPickErrorPropId(propId);
+    }
+
+    try {
+      // Auth is handled by httpOnly cookie, no need to pass secret in URL
+      const response = await fetch(`/api/pools/${code}/picks`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propId, selectedOptionIndex }),
+      });
+
+      if (!response.ok) {
+        rollback();
+        return;
+      }
+    } catch {
+      rollback();
     } finally {
       setSubmitting(null);
     }

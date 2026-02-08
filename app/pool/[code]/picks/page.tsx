@@ -159,7 +159,6 @@ export default async function PlayerPicks({
             }))}
             initialPicks={myPicks}
             poolStatus={pool.status}
-            secret={secret}
           />
         ) : null}
       </main>

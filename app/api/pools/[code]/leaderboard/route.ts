@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pools, players, props } from '@/src/lib/schema';
 import { eq, desc, asc, isNotNull, and } from 'drizzle-orm';
+import { safeCompareSecrets } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
 
@@ -61,7 +62,7 @@ export async function getLeaderboardHandler(
       name: p.name,
       totalPoints: p.totalPoints,
       rank: index + 1,
-      isCaptain: p.secret === pool.captainSecret,
+      isCaptain: safeCompareSecrets(p.secret, pool.captainSecret),
     }));
 
     return NextResponse.json(

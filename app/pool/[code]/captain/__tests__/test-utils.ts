@@ -64,7 +64,6 @@ export const defaultComponentProps = {
   poolStatus: 'open',
   propsList: [] as MockProp[],
   initialPicks: [] as MockInitialPick[],
-  secret: 'captain-secret-456',
 };
 
 // Helper to create props with specific pool status

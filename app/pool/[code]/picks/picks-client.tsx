@@ -12,7 +12,6 @@ interface PicksClientProps {
   propsList: Prop[];
   initialPicks: { propId: string; selectedOptionIndex: number }[];
   poolStatus: string;
-  secret: string;
 }
 
 export function PicksClient({
@@ -20,7 +19,6 @@ export function PicksClient({
   propsList,
   initialPicks,
   poolStatus,
-  secret,
 }: PicksClientProps) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -28,7 +26,6 @@ export function PicksClient({
   // Use the shared picks hook for all state management
   const picks = usePicks({
     code,
-    secret,
     initialPicks,
     poolStatus,
     totalProps: propsList.length,

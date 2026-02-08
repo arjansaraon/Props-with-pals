@@ -4,7 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { CaptainTabsClient } from './captain-tabs-client';
-import { getPoolSecret } from '@/src/lib/auth';
+import { getPoolSecret, safeCompareSecrets } from '@/src/lib/auth';
 import { Card, CardContent } from '@/app/components/ui/card';
 import { PoolHeader } from '@/app/components/pool-header';
 
@@ -45,7 +45,7 @@ export default async function CaptainDashboard({
   const pool = poolResult[0];
 
   // Verify captain secret
-  if (!secret || pool.captainSecret !== secret) {
+  if (!secret || !safeCompareSecrets(secret, pool.captainSecret)) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="max-w-md w-full shadow-lg">
@@ -103,7 +103,7 @@ export default async function CaptainDashboard({
           buyInAmount={pool.buyInAmount}
           createdAt={pool.createdAt}
           currentUserName={pool.captainName}
-          myLinkUrl={`${protocol}://${host}/pool/${code}/captain?secret=${secret}`}
+          myLinkUrl={`${protocol}://${host}/pool/${code}/captain`}
           shareLinkUrl={`${protocol}://${host}/pool/${code}`}
           tooltipTitle="Share instructions"
           tooltipInstructions={[
@@ -128,7 +128,6 @@ export default async function CaptainDashboard({
             order: p.order,
           }))}
           initialPicks={myPicks}
-          secret={secret}
         />
       </main>
     </div>

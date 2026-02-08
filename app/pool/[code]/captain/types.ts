@@ -13,7 +13,6 @@ export interface CaptainTabsClientProps {
   poolStatus: string;
   propsList: Prop[];
   initialPicks: InitialPick[];
-  secret: string;
 }
 
 /**

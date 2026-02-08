@@ -4,6 +4,7 @@ import { timingSafeEqual } from 'crypto';
 
 const COOKIE_NAME = 'pwp_auth';
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
+const MAX_POOLS_PER_COOKIE = 50; // Prevent cookie from exceeding ~4KB browser limit
 
 interface AuthCookieData {
   pools: Record<string, string>; // { inviteCode: secret }
@@ -94,6 +95,14 @@ export async function setPoolSecretCookie(
 
     // Add new pool secret
     data.pools[code] = secret;
+
+    // Evict oldest pools if over limit (JS objects preserve insertion order for string keys)
+    const keys = Object.keys(data.pools);
+    if (keys.length > MAX_POOLS_PER_COOKIE) {
+      for (const key of keys.slice(0, keys.length - MAX_POOLS_PER_COOKIE)) {
+        delete data.pools[key];
+      }
+    }
 
     // Set updated cookie on response
     response.cookies.set(COOKIE_NAME, encodeAuthCookie(data), {
