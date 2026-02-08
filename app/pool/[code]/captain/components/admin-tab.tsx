@@ -75,11 +75,13 @@ function SortablePropCard({ prop, poolStatus, editProp, adminActions, isDndEnabl
         isSaving={editProp.isSaving}
         hasPicksWarning={editProp.hasPicksWarning}
         resolvingPropId={adminActions.resolvingPropId}
+        deletingPropId={adminActions.deletingPropId}
         dragHandleProps={handleProps}
         onStartEditing={editProp.startEditing}
         onCancelEditing={editProp.cancelEditing}
         onSaveChanges={editProp.saveChanges}
         onResolve={adminActions.handleResolve}
+        onDelete={adminActions.handleDeleteProp}
         onQuestionChange={editProp.setQuestionText}
         onPointValueChange={editProp.setPointValue}
         onAddOption={editProp.addOption}
@@ -94,9 +96,11 @@ interface AdminActionsReturn {
   isLocking: boolean;
   isCompleting: boolean;
   resolvingPropId: string | null;
+  deletingPropId: string | null;
   handleLockPool: () => void;
   handleCompletePool: () => void;
   handleResolve: (propId: string, optionIndex: number) => void;
+  handleDeleteProp: (propId: string) => void;
 }
 
 interface AddPropFormReturn {

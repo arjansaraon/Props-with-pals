@@ -13,9 +13,11 @@ interface UseAdminActionsReturn {
   isLocking: boolean;
   isCompleting: boolean;
   resolvingPropId: string | null;
+  deletingPropId: string | null;
   handleLockPool: () => Promise<void>;
   handleCompletePool: () => Promise<void>;
   handleResolve: (propId: string, correctOptionIndex: number) => Promise<void>;
+  handleDeleteProp: (propId: string) => Promise<void>;
 }
 
 export function useAdminActions({ code, onError }: UseAdminActionsProps): UseAdminActionsReturn {
@@ -25,6 +27,7 @@ export function useAdminActions({ code, onError }: UseAdminActionsProps): UseAdm
   const [isLocking, setIsLocking] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [resolvingPropId, setResolvingPropId] = useState<string | null>(null);
+  const [deletingPropId, setDeletingPropId] = useState<string | null>(null);
 
   async function handleLockPool() {
     setIsLocking(true);
@@ -104,12 +107,38 @@ export function useAdminActions({ code, onError }: UseAdminActionsProps): UseAdm
     }
   }
 
+  async function handleDeleteProp(propId: string) {
+    setDeletingPropId(propId);
+    onError('');
+
+    try {
+      const response = await fetch(`/api/pools/${code}/props/${propId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        onError(data.message || 'Failed to delete prop');
+        return;
+      }
+
+      showToast('Prop deleted', 'success');
+      router.refresh();
+    } catch {
+      onError('Failed to delete prop. Please try again.');
+    } finally {
+      setDeletingPropId(null);
+    }
+  }
+
   return {
     isLocking,
     isCompleting,
     resolvingPropId,
+    deletingPropId,
     handleLockPool,
     handleCompletePool,
     handleResolve,
+    handleDeleteProp,
   };
 }

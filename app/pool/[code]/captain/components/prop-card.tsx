@@ -34,11 +34,13 @@ interface PropCardProps {
   isSaving: boolean;
   hasPicksWarning: boolean;
   resolvingPropId: string | null;
+  deletingPropId: string | null;
   dragHandleProps?: Record<string, unknown>;
   onStartEditing: (prop: Prop) => Promise<void>;
   onCancelEditing: () => void;
   onSaveChanges: () => Promise<void>;
   onResolve: (propId: string, optionIndex: number) => void;
+  onDelete: (propId: string) => void;
   onQuestionChange: (value: string) => void;
   onPointValueChange: (value: string) => void;
   onAddOption: () => void;
@@ -54,11 +56,13 @@ export function PropCard({
   isSaving,
   hasPicksWarning,
   resolvingPropId,
+  deletingPropId,
   dragHandleProps,
   onStartEditing,
   onCancelEditing,
   onSaveChanges,
   onResolve,
+  onDelete,
   onQuestionChange,
   onPointValueChange,
   onAddOption,
@@ -71,6 +75,7 @@ export function PropCard({
     optionText: string;
     isChange: boolean;
   }>({ isOpen: false, optionIndex: -1, optionText: '', isChange: false });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleConfirmResolve = () => {
     onResolve(prop.id, confirmDialog.optionIndex);
@@ -189,14 +194,25 @@ export function PropCard({
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">{prop.pointValue} pts</span>
             {poolStatus === 'open' && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onStartEditing(prop)}
-                className="h-8 w-8 p-0"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onStartEditing(prop)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={deletingPropId === prop.id}
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -267,7 +283,7 @@ export function PropCard({
           </p>
         )}
 
-        {/* Confirmation Dialog */}
+        {/* Resolve Confirmation Dialog */}
         <AlertDialog open={confirmDialog.isOpen} onOpenChange={(open) => !open && setConfirmDialog({ isOpen: false, optionIndex: -1, optionText: '', isChange: false })}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -293,6 +309,30 @@ export function PropCard({
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
                 {confirmDialog.isChange ? 'Change Answer' : 'Confirm'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete prop?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete <strong>&quot;{prop.questionText}&quot;</strong> and any picks players have made for it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  onDelete(prop.id);
+                }}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                Delete
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
