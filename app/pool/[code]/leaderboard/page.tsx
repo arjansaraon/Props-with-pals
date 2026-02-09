@@ -1,5 +1,5 @@
 import { db } from '@/src/lib/db';
-import { pools, players, props } from '@/src/lib/schema';
+import { pools, players, props, picks } from '@/src/lib/schema';
 import { eq, desc, asc, and, isNotNull } from 'drizzle-orm';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
@@ -15,6 +15,9 @@ import {
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Trophy } from 'lucide-react';
 import { getPoolSecret, safeCompareSecrets } from '@/src/lib/auth';
+import { computePerPropStats, computePoolSummary } from '@/src/lib/pick-stats';
+import type { PropPickStats, PoolPickSummary } from '@/src/lib/pick-stats';
+import { LeaderboardStats } from './leaderboard-stats';
 
 export default async function Leaderboard({
   params,
@@ -44,24 +47,52 @@ export default async function Leaderboard({
   const secret = await getPoolSecret(code);
   const isCaptain = secret ? safeCompareSecrets(pool.captainSecret, secret) : false;
 
-  // Fetch participants ordered by points (include secret to determine captain)
-  const participantList = await db
-    .select({
+  // Run remaining queries in parallel for performance
+  const isNotOpen = pool.status !== 'open';
+  const [participantList, resolvedPropsResult, propsList, allPicks] = await Promise.all([
+    // Fetch participants ordered by points
+    db.select({
       id: players.id,
       name: players.name,
       totalPoints: players.totalPoints,
       secret: players.secret,
     })
-    .from(players)
-    .where(eq(players.poolId, pool.id))
-    .orderBy(desc(players.totalPoints), asc(players.name));
+      .from(players)
+      .where(eq(players.poolId, pool.id))
+      .orderBy(desc(players.totalPoints), asc(players.name)),
 
-  // Check if any props have been resolved
-  const resolvedPropsResult = await db
-    .select({ id: props.id })
-    .from(props)
-    .where(and(eq(props.poolId, pool.id), isNotNull(props.correctOptionIndex)))
-    .limit(1);
+    // Check if any props have been resolved
+    db.select({ id: props.id })
+      .from(props)
+      .where(and(eq(props.poolId, pool.id), isNotNull(props.correctOptionIndex)))
+      .limit(1),
+
+    // Fetch all props (for pick stats — only when pool is not open)
+    isNotOpen
+      ? db.select({
+          id: props.id,
+          questionText: props.questionText,
+          options: props.options,
+          correctOptionIndex: props.correctOptionIndex,
+          category: props.category,
+          order: props.order,
+        })
+          .from(props)
+          .where(eq(props.poolId, pool.id))
+          .orderBy(props.order)
+      : Promise.resolve([] as { id: string; questionText: string; options: unknown; correctOptionIndex: number | null; category: string | null; order: number }[]),
+
+    // Fetch all picks via JOIN (for pick stats — only when pool is not open)
+    isNotOpen
+      ? db.select({
+          propId: picks.propId,
+          selectedOptionIndex: picks.selectedOptionIndex,
+        })
+          .from(picks)
+          .innerJoin(props, eq(picks.propId, props.id))
+          .where(eq(props.poolId, pool.id))
+      : Promise.resolve([] as { propId: string; selectedOptionIndex: number }[]),
+  ]);
 
   const hasResolvedProps = resolvedPropsResult.length > 0;
 
@@ -72,6 +103,30 @@ export default async function Leaderboard({
     totalPoints: p.totalPoints,
     isCaptain: p.secret === pool.captainSecret,
   }));
+
+  // Compute pick stats (only for non-open pools with props)
+  let summary: PoolPickSummary | null = null;
+  let perPropStatsArray: { propId: string; questionText: string; options: string[]; correctOptionIndex: number | null; category: string | null; stats: PropPickStats }[] = [];
+
+  if (isNotOpen && propsList.length > 0) {
+    const propsForStats = propsList.map((p) => ({
+      id: p.id,
+      questionText: p.questionText,
+      options: p.options as string[],
+      correctOptionIndex: p.correctOptionIndex,
+    }));
+    const statsMap = computePerPropStats(allPicks, propsForStats);
+    summary = computePoolSummary(statsMap, propsForStats);
+
+    perPropStatsArray = propsList.map((p) => ({
+      propId: p.id,
+      questionText: p.questionText,
+      options: p.options as string[],
+      correctOptionIndex: p.correctOptionIndex,
+      category: p.category,
+      stats: statsMap.get(p.id)!,
+    }));
+  }
 
   const statusVariant = pool.status === 'open' ? 'success' : pool.status === 'locked' ? 'warning' : 'info';
 
@@ -222,6 +277,14 @@ export default async function Leaderboard({
             </Table>
           )}
         </Card>
+
+        {/* Pick Popularity Stats (only when pool is not open) */}
+        {isNotOpen && summary && perPropStatsArray.length > 0 && (
+          <LeaderboardStats
+            summary={summary}
+            perPropStats={perPropStatsArray}
+          />
+        )}
 
         {/* Helper text for open pools */}
         {pool.status === 'open' && leaderboard.length > 0 && (

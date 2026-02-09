@@ -12,6 +12,10 @@ interface PropWithPick {
   pointValue: number;
   correctOptionIndex: number | null;
   selectedOptionIndex: number | null;
+  pickPopularity?: {
+    totalPicks: number;
+    selectedCount: number;
+  };
 }
 
 interface Stats {
@@ -136,14 +140,33 @@ export function PlayerPicksView({
                           {option}
                         </span>
                         {isSelected && !isResolved && (
-                          <span className="text-primary text-sm">Their pick</span>
+                          <div className="flex items-center gap-2">
+                            {prop.pickPopularity && prop.pickPopularity.totalPicks > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                {prop.pickPopularity.selectedCount} of {prop.pickPopularity.totalPicks} picked this
+                              </span>
+                            )}
+                            <span className="text-primary text-sm">Their pick</span>
+                          </div>
                         )}
                         {isCorrectOption && (
                           <Check className="h-4 w-4 text-muted-foreground" />
                         )}
                         {isWrongSelection && (
-                          <span className="text-destructive text-sm flex items-center gap-1">
-                            <X className="h-4 w-4" /> Wrong
+                          <div className="flex items-center gap-2">
+                            {prop.pickPopularity && prop.pickPopularity.totalPicks > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                {prop.pickPopularity.selectedCount} of {prop.pickPopularity.totalPicks}
+                              </span>
+                            )}
+                            <span className="text-destructive text-sm flex items-center gap-1">
+                              <X className="h-4 w-4" /> Wrong
+                            </span>
+                          </div>
+                        )}
+                        {isCorrectOption && isSelected && prop.pickPopularity && prop.pickPopularity.totalPicks > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            {prop.pickPopularity.selectedCount} of {prop.pickPopularity.totalPicks} picked this
                           </span>
                         )}
                       </div>

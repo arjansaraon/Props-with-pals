@@ -3,6 +3,7 @@ import { pools, props, picks, players } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { getPoolSecret } from '@/src/lib/auth';
+import { computePerPropStats } from '@/src/lib/pick-stats';
 import { PlayerPicksView } from './player-picks-view';
 
 export default async function PlayerPicksPage({
@@ -62,25 +63,40 @@ export default async function PlayerPicksPage({
     redirect(`/pool/${code}/picks`);
   }
 
-  // Fetch all props for this pool
-  const propsList = await db
-    .select()
-    .from(props)
-    .where(eq(props.poolId, pool.id))
-    .orderBy(props.order);
+  // Fetch props, participant picks, and all picks in parallel
+  const [propsList, picksResult, allPicks] = await Promise.all([
+    db.select()
+      .from(props)
+      .where(eq(props.poolId, pool.id))
+      .orderBy(props.order),
+    db.select()
+      .from(picks)
+      .where(eq(picks.playerId, participant.id)),
+    db.select({
+      propId: picks.propId,
+      selectedOptionIndex: picks.selectedOptionIndex,
+    })
+      .from(picks)
+      .innerJoin(props, eq(picks.propId, props.id))
+      .where(eq(props.poolId, pool.id)),
+  ]);
 
-  // Fetch this participant's picks
-  const picksResult = await db
-    .select()
-    .from(picks)
-    .where(eq(picks.playerId, participant.id));
+  // Compute pick popularity stats
+  const propsForStats = propsList.map((p) => ({
+    id: p.id,
+    questionText: p.questionText,
+    options: p.options as string[],
+    correctOptionIndex: p.correctOptionIndex,
+  }));
+  const pickStatsMap = computePerPropStats(allPicks, propsForStats);
 
-  // Create a map of propId -> pick
+  // Create a map of propId -> this player's pick
   const picksMap = new Map(picksResult.map(p => [p.propId, p]));
 
-  // Build props with picks data
+  // Build props with picks data + popularity
   const propsWithPicks = propsList.map(prop => {
     const pick = picksMap.get(prop.id);
+    const propStats = pickStatsMap.get(prop.id);
     return {
       id: prop.id,
       questionText: prop.questionText,
@@ -88,6 +104,10 @@ export default async function PlayerPicksPage({
       pointValue: prop.pointValue,
       correctOptionIndex: prop.correctOptionIndex,
       selectedOptionIndex: pick?.selectedOptionIndex ?? null,
+      pickPopularity: propStats ? {
+        totalPicks: propStats.totalPicks,
+        selectedCount: pick ? propStats.optionCounts[pick.selectedOptionIndex] ?? 0 : 0,
+      } : undefined,
     };
   });
 
