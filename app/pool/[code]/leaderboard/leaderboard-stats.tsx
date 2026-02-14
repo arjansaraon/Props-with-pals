@@ -51,7 +51,7 @@ export function LeaderboardStats({ summary, perPropStats }: LeaderboardStatsProp
     <div className="mt-6 space-y-4">
       {/* Summary Highlights */}
       {hasSummary && (
-        <Card className="shadow-lg">
+        <Card className="shadow-md">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Highlights</CardTitle>
           </CardHeader>
@@ -109,7 +109,7 @@ export function LeaderboardStats({ summary, perPropStats }: LeaderboardStatsProp
       {/* Per-Prop Pick Popularity */}
       {perPropStats.length > 0 && (
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <Card className="shadow-lg">
+          <Card className="shadow-md">
             <CollapsibleTrigger asChild>
               <button
                 type="button"

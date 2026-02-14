@@ -21,7 +21,7 @@ export default function PoolError({ error, reset }: ErrorProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <Card className="max-w-md w-full shadow-lg">
+      <Card className="max-w-md w-full shadow-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
             <AlertCircle className="h-6 w-6 text-destructive" />

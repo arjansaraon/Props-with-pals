@@ -162,7 +162,7 @@ export function CaptainClient({
 
       {/* Add Prop Form (only when pool is open) */}
       {poolStatus === 'open' && (
-        <Card className="shadow-lg mb-6">
+        <Card className="shadow-md mb-6">
           <CardHeader>
             <CardTitle>Add New Prop</CardTitle>
           </CardHeader>
@@ -242,13 +242,13 @@ export function CaptainClient({
             Props ({propsList.length})
           </h2>
           {propsList.map((prop) => (
-            <Card key={prop.id} className="shadow-lg">
+            <Card key={prop.id} className="shadow-md">
               <CardContent className="pt-6">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-lg font-medium text-foreground">
                     {prop.questionText}
                   </h3>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm font-mono text-muted-foreground">
                     {prop.pointValue} pts
                   </span>
                 </div>
@@ -311,7 +311,7 @@ export function CaptainClient({
       )}
 
       {propsList.length === 0 && poolStatus === 'open' && (
-        <Card className="shadow-lg">
+        <Card className="shadow-sm">
           <CardContent className="py-6">
             <p className="text-muted-foreground text-center">
               No props yet. Add your first prop above!

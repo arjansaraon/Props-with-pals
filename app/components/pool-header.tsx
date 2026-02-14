@@ -62,7 +62,7 @@ export function PoolHeader({
       <CardHeader>
         {/* Row 1: Pool name + status (+ action buttons for captain) */}
         <div className="flex justify-between items-start">
-          <CardTitle className="text-2xl">{poolName}</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">{poolName}</CardTitle>
           {isCaptain ? (
             <PoolStatusAction code={poolCode} initialStatus={poolStatus} />
           ) : (

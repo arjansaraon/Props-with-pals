@@ -137,7 +137,7 @@ export default async function Leaderboard({
         <Card className="shadow-lg mb-6">
           <CardHeader>
             <div className="flex justify-between items-start">
-              <CardTitle className="text-2xl">{pool.name} Leaderboard</CardTitle>
+              <CardTitle className="text-2xl font-bold tracking-tight">{pool.name} Leaderboard</CardTitle>
               <Badge variant={statusVariant}>
                 {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
               </Badge>
@@ -152,7 +152,7 @@ export default async function Leaderboard({
         </Card>
 
         {/* Leaderboard */}
-        <Card className="shadow-lg overflow-hidden">
+        <Card className="shadow-md overflow-hidden">
           {leaderboard.length === 0 ? (
             <CardContent className="py-6">
               <p className="text-muted-foreground text-center">
@@ -210,7 +210,7 @@ export default async function Leaderboard({
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="text-sm font-semibold text-foreground">
+                        <span className="text-sm font-semibold font-mono tabular-nums text-foreground">
                           {hasResolvedProps ? participant.totalPoints : '—'}
                         </span>
                       </TableCell>
@@ -221,7 +221,13 @@ export default async function Leaderboard({
                     return (
                       <TableRow
                         key={participant.id}
-                        className={`cursor-pointer hover:bg-muted/50 transition-colors ${isWinner ? 'bg-amber-50 hover:bg-amber-100' : ''}`}
+                        className={`cursor-pointer hover:bg-muted/50 transition-colors ${
+                          isWinner ? 'bg-amber-50 hover:bg-amber-100'
+                          : hasResolvedProps && rank === 1 ? 'bg-amber-50/60 border-l-4 border-l-amber-400'
+                          : hasResolvedProps && rank === 2 ? 'bg-slate-50/60 border-l-4 border-l-slate-300'
+                          : hasResolvedProps && rank === 3 ? 'bg-amber-50/40 border-l-4 border-l-amber-600/40'
+                          : ''
+                        }`}
                       >
                         <TableCell colSpan={3} className="p-0">
                           <Link
@@ -243,19 +249,19 @@ export default async function Leaderboard({
                               {rank}
                             </span>
                             <span className="flex-1 px-4 py-4 flex items-center gap-2">
-                              <span className="text-sm font-medium text-foreground">
+                              <span className={`text-sm text-foreground ${isWinner ? 'font-semibold' : 'font-medium'}`}>
                                 {participant.name}
                               </span>
                               {participant.isCaptain && (
                                 <Badge variant="secondary" className="text-xs">Captain</Badge>
                               )}
                               {isWinner && (
-                                <span className="text-amber-500">
+                                <span className="text-amber-500 font-semibold">
                                   Winner!
                                 </span>
                               )}
                             </span>
-                            <span className="flex-none px-4 py-4 text-right text-sm font-semibold text-foreground">
+                            <span className="flex-none px-4 py-4 text-right text-sm font-semibold font-mono tabular-nums text-foreground">
                               {hasResolvedProps ? participant.totalPoints : '—'}
                             </span>
                           </Link>
@@ -267,7 +273,13 @@ export default async function Leaderboard({
                   return (
                     <TableRow
                       key={participant.id}
-                      className={isWinner ? 'bg-amber-50' : ''}
+                      className={`hover:bg-muted/50 transition-colors ${
+                        isWinner ? 'bg-amber-50'
+                        : hasResolvedProps && rank === 1 ? 'bg-amber-50/60 border-l-4 border-l-amber-400'
+                        : hasResolvedProps && rank === 2 ? 'bg-slate-50/60 border-l-4 border-l-slate-300'
+                        : hasResolvedProps && rank === 3 ? 'bg-amber-50/40 border-l-4 border-l-amber-600/40'
+                        : ''
+                      }`}
                     >
                       {rowContent}
                     </TableRow>

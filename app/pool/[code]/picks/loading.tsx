@@ -18,7 +18,7 @@ export default function PicksLoading() {
         </div>
 
         {/* Progress Skeleton */}
-        <Card className="shadow-lg mb-6">
+        <Card className="shadow-md mb-6">
           <CardContent className="py-4">
             <div className="flex justify-between items-center mb-2">
               <Skeleton className="h-4 w-24" />
@@ -31,7 +31,7 @@ export default function PicksLoading() {
         {/* Props List Skeleton */}
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="shadow-lg">
+            <Card key={i} className="shadow-md">
               <CardContent className="pt-6">
                 <div className="flex justify-between items-start mb-4">
                   <Skeleton className="h-6 w-3/4" />

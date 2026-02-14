@@ -36,7 +36,7 @@ export default function CaptainLoading() {
         <div className="space-y-4">
           <Skeleton className="h-6 w-32 mb-4" />
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="shadow-lg">
+            <Card key={i} className="shadow-md">
               <CardContent className="pt-6">
                 <div className="flex justify-between items-start mb-4">
                   <Skeleton className="h-6 w-3/4" />

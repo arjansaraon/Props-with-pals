@@ -234,7 +234,7 @@ export function AdminTab({
 
       {/* Empty State */}
       {propsList.length === 0 && poolStatus === 'open' && (
-        <Card className="shadow-lg mb-6">
+        <Card className="shadow-sm mb-6">
           <CardContent className="py-6">
             <p className="text-muted-foreground text-center">No props yet. Add your first prop below!</p>
           </CardContent>

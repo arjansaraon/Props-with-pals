@@ -52,7 +52,7 @@ export function AddPropForm({
   }
 
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-md">
       <CardHeader>
         <CardTitle>Add New Prop</CardTitle>
       </CardHeader>

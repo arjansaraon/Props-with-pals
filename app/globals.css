@@ -1,21 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  /* Electric Blue Energy Theme */
-  --background: #F0F7FF;
+  /* Competitive Social Theme */
+  --background: #F8FAFC;
   --foreground: #1E293B;
   --card: #FFFFFF;
   --card-foreground: #1E293B;
   --popover: #FFFFFF;
   --popover-foreground: #1E293B;
-  --primary: #0066FF;
+  --primary: #2563EB;
   --primary-foreground: #FFFFFF;
-  --secondary: #00D4AA;
+  --secondary: #6366F1;
   --secondary-foreground: #FFFFFF;
   --muted: #F1F5F9;
   --muted-foreground: #64748B;
-  --accent: #E6F0FF;
-  --accent-foreground: #0052CC;
+  --accent: #EEF2FF;
+  --accent-foreground: #4338CA;
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
   --success: #10B981;
@@ -24,8 +24,13 @@
   --warning-foreground: #FFFFFF;
   --border: #E2E8F0;
   --input: #E2E8F0;
-  --ring: #0066FF;
-  --radius: 0.75rem;
+  --ring: #2563EB;
+  --radius: 0.625rem;
+
+  /* 3-tier shadow system */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 2px 8px -1px rgba(0, 0, 0, 0.06), 0 1px 3px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 4px 16px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.04);
 }
 
 @theme inline {
@@ -56,6 +61,9 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -65,11 +73,11 @@
 }
 
 body {
-  background-color: #F0F7FF;
+  background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
 html {
-  background-color: #F0F7FF;
+  background-color: var(--background);
 }

@@ -14,7 +14,7 @@ interface PlayersTabProps {
 
 export function PlayersTab({ code, players, isLoading }: PlayersTabProps) {
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-md">
       <CardHeader>
         <CardTitle>Players ({players.length})</CardTitle>
         <p className="text-sm text-muted-foreground">

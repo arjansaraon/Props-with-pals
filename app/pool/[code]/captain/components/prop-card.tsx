@@ -89,7 +89,7 @@ export function PropCard({
 
   if (isEditing) {
     return (
-      <Card className="shadow-lg">
+      <Card className="shadow-md">
         <CardContent className="pt-6">
           <div className="space-y-4">
             {hasPicksWarning && (
@@ -200,7 +200,7 @@ export function PropCard({
 
   // View mode
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-md">
       <CardContent className="pt-6">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-start gap-2 flex-1 min-w-0">

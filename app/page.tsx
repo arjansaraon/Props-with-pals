@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveUserSession } from '@/src/lib/user-session';
 import { INVITE_CODE_CHARS } from '@/src/lib/invite-code';
@@ -46,7 +46,12 @@ export default function Home() {
   const [name, setName] = useState('');
   const [captainName, setCaptainName] = useState('');
   const [buyInAmount, setBuyInAmount] = useState('');
-  const [customCode, setCustomCode] = useState(() => generateSuggestedCode());
+  const [customCode, setCustomCode] = useState('');
+
+  // Generate suggested code on client only to avoid hydration mismatch
+  useEffect(() => {
+    setCustomCode(generateSuggestedCode());
+  }, []);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
@@ -118,7 +123,7 @@ export default function Home() {
         {/* Join Pool - Primary Action */}
         <Card className="shadow-lg">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl">Props With Pals</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">Props With Pals</CardTitle>
             <CardDescription>Make prop bets with your friends</CardDescription>
           </CardHeader>
           <CardContent>

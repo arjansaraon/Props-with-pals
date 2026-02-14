@@ -47,8 +47,8 @@ export function PlayerPicksView({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl">{playerName}'s Picks</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
+              <CardTitle className="text-2xl font-bold tracking-tight">{playerName}'s Picks</CardTitle>
+              <p className="text-sm font-mono text-muted-foreground mt-1">
                 {totalPoints} total points
               </p>
             </div>
@@ -102,11 +102,11 @@ export function PlayerPicksView({
         const isResolved = prop.correctOptionIndex !== null;
 
         return (
-          <Card key={prop.id} className="shadow-lg">
+          <Card key={prop.id} className="shadow-md">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg">{prop.questionText}</CardTitle>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm font-mono text-muted-foreground">
                   {prop.pointValue} pts
                 </span>
               </div>

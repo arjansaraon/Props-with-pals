@@ -85,7 +85,7 @@ export function PicksView({
 
       {/* Props List */}
       {propsList.length === 0 ? (
-        <Card className="shadow-lg">
+        <Card className="shadow-sm">
           <CardContent className="py-6">
             <p className="text-muted-foreground text-center">No props have been added yet.</p>
           </CardContent>
@@ -108,12 +108,12 @@ export function PicksView({
               return (
                 <Card
                   key={prop.id}
-                  className={`shadow-lg ${hasError ? 'ring-2 ring-destructive' : ''}`}
+                  className={`shadow-md ${hasError ? 'ring-2 ring-destructive' : ''}`}
                 >
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{prop.questionText}</CardTitle>
-                      <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">{prop.pointValue} pts</span>
+                      <span className="text-sm font-mono text-muted-foreground whitespace-nowrap shrink-0">{prop.pointValue} pts</span>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -136,14 +136,14 @@ export function PicksView({
                             key={index}
                             onClick={() => handlePick(prop.id, index)}
                             disabled={poolStatus !== 'open' || submitting !== null}
-                            className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
+                            className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all duration-150 ${
                               isCorrect
                                 ? 'border-emerald-500 bg-emerald-50'
                                 : isWrong
                                   ? 'border-destructive bg-red-50'
                                   : isSelected
-                                    ? 'border-primary bg-primary/10'
-                                    : 'bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/20'
+                                    ? 'border-primary bg-primary/5'
+                                    : 'bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/30'
                             } ${poolStatus !== 'open' ? 'cursor-default' : 'cursor-pointer'}`}
                           >
                             <div className="flex items-center justify-between">
