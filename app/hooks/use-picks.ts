@@ -19,10 +19,15 @@ interface UsePicksProps {
   totalProps: number;
 }
 
+interface PickError {
+  propId: string;
+  message: string;
+}
+
 interface UsePicksReturn {
   myPicks: Map<string, number>;
   submitting: SubmittingState | null;
-  pickErrorPropId: string | null;
+  pickError: PickError | null;
   pickedCount: number;
   allPicked: boolean;
   progressPercent: number;
@@ -42,7 +47,7 @@ export function usePicks({
     return map;
   });
   const [submitting, setSubmitting] = useState<SubmittingState | null>(null);
-  const [pickErrorPropId, setPickErrorPropId] = useState<string | null>(null);
+  const [pickError, setPickError] = useState<PickError | null>(null);
 
   // Derived state
   const pickedCount = myPicks.size;
@@ -50,14 +55,14 @@ export function usePicks({
   const progressPercent = totalProps > 0 ? (pickedCount / totalProps) * 100 : 0;
 
   async function handlePick(propId: string, selectedOptionIndex: number) {
-    if (poolStatus !== 'open') return;
+    if (poolStatus === 'completed') return;
 
     const previousPick = myPicks.get(propId);
     setMyPicks((prev) => new Map(prev).set(propId, selectedOptionIndex));
     setSubmitting({ propId, index: selectedOptionIndex });
-    setPickErrorPropId(null);
+    setPickError(null);
 
-    function rollback() {
+    function rollback(message: string) {
       setMyPicks((prev) => {
         const newMap = new Map(prev);
         if (previousPick !== undefined) {
@@ -67,7 +72,7 @@ export function usePicks({
         }
         return newMap;
       });
-      setPickErrorPropId(propId);
+      setPickError({ propId, message });
     }
 
     try {
@@ -80,24 +85,31 @@ export function usePicks({
       });
 
       if (!response.ok) {
-        rollback();
+        let message = 'Failed to save pick. Please try again.';
+        try {
+          const data = await response.json();
+          if (data.code === 'UNAUTHORIZED') message = 'Session expired. Please refresh the page.';
+          else if (data.code === 'POOL_COMPLETED') message = 'Pool is completed. Picks can no longer be changed.';
+          else if (data.message) message = data.message;
+        } catch { /* use default message */ }
+        rollback(message);
         return;
       }
     } catch {
-      rollback();
+      rollback('Network error. Please check your connection and try again.');
     } finally {
       setSubmitting(null);
     }
   }
 
   function clearPickError() {
-    setPickErrorPropId(null);
+    setPickError(null);
   }
 
   return {
     myPicks,
     submitting,
-    pickErrorPropId,
+    pickError,
     pickedCount,
     allPicked,
     progressPercent,

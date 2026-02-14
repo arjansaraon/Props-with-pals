@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 
 const COOKIE_NAME = 'pwp_auth';
@@ -175,68 +175,6 @@ export async function clearPoolSecretCookie(
   }
 
   return response;
-}
-
-/**
- * Validates the Origin header for CSRF protection.
- * Returns true if the request is from an allowed origin.
- * Requires at least one of Origin or Referer headers to be present.
- */
-export function validateOrigin(request: Request): boolean {
-  const origin = request.headers.get('origin');
-  const referer = request.headers.get('referer');
-
-  // Require at least one header for CSRF protection
-  // Note: curl users should add -H "Origin: http://localhost:3000" to their commands
-  if (!origin && !referer) {
-    return false;
-  }
-
-  // Get expected host
-  const host = request.headers.get('host');
-  if (!host) {
-    return false;
-  }
-
-  // Check origin matches
-  if (origin) {
-    try {
-      const originUrl = new URL(origin);
-      if (originUrl.host === host) {
-        return true;
-      }
-    } catch {
-      return false;
-    }
-  }
-
-  // Check referer matches (fallback)
-  if (referer) {
-    try {
-      const refererUrl = new URL(referer);
-      if (refererUrl.host === host) {
-        return true;
-      }
-    } catch {
-      return false;
-    }
-  }
-
-  return false;
-}
-
-/**
- * CSRF protection middleware for mutations.
- * Returns an error response if CSRF check fails, null if valid.
- */
-export function requireValidOrigin(request: Request): NextResponse | null {
-  if (!validateOrigin(request)) {
-    return NextResponse.json(
-      { code: 'CSRF_ERROR', message: 'Invalid request origin' },
-      { status: 403 }
-    );
-  }
-  return null;
 }
 
 /**

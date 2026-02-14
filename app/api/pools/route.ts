@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pools, players } from '@/src/lib/schema';
-import { eq } from 'drizzle-orm';
 import { CreatePoolSchema } from '@/src/lib/validators';
 import { generateInviteCode } from '@/src/lib/invite-code';
-import { jsonResponseWithAuth, requireValidOrigin } from '@/src/lib/auth';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import type * as schema from '@/src/lib/schema';
+import { jsonResponseWithAuth } from '@/src/lib/auth';
+import type { Database } from '@/src/lib/api-helpers';
 
-export type Database = LibSQLDatabase<typeof schema>;
+export type { Database };
 
 /**
  * Normalizes a name for use in invite code prefix.
@@ -51,20 +49,6 @@ export async function createPoolHandler(
       // Combine normalized captain name with custom suffix: "john-superbowl-2026"
       const captainPrefix = normalizeNameForCode(captainName);
       inviteCode = captainPrefix ? `${captainPrefix}-${customCodeSuffix}` : customCodeSuffix;
-
-      // Check if combined code is already in use
-      const existingPool = await database
-        .select({ id: pools.id })
-        .from(pools)
-        .where(eq(pools.inviteCode, inviteCode))
-        .limit(1);
-
-      if (existingPool.length > 0) {
-        return NextResponse.json(
-          { code: 'CODE_TAKEN', message: 'This invite code is already in use' },
-          { status: 409 }
-        );
-      }
     } else {
       inviteCode = generateInviteCode();
     }
@@ -151,10 +135,6 @@ export async function createPoolHandler(
  * Creates a new pool
  */
 export async function POST(request: NextRequest): Promise<Response> {
-  // CSRF protection
-  const csrfError = requireValidOrigin(request);
-  if (csrfError) return csrfError;
-
   // Lazy import to avoid loading production db during tests
   const { db } = await import('@/src/lib/db');
   return createPoolHandler(request, db);

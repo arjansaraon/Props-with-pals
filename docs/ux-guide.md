@@ -8,17 +8,18 @@ Patterns and guidelines for consistent user experience.
 
 ### Routes
 ```
-/                           → Home (create or join)
-/pool/{code}                → Smart routing (see below)
-/pool/{code}/captain        → Captain dashboard (?secret= in URL)
-/pool/{code}/picks          → Participant picks (?secret= in URL)
-/pool/{code}/leaderboard    → Public leaderboard
+/                                → Home (create or join)
+/pool/{code}                     → Join pool entry page
+/pool/{code}/captain             → Captain dashboard (auth via httpOnly cookie)
+/pool/{code}/picks               → Participant picks (auth via httpOnly cookie)
+/pool/{code}/leaderboard         → Public leaderboard
+/pool/{code}/player/{id}         → Individual player's picks view
 ```
 
-### Smart Link Behavior
+### Smart Link Behavior (Phase 4)
 When user visits `/pool/{code}`:
-1. Check localStorage for saved secret for this pool
-2. If found → redirect to their view (captain or participant)
+1. Check localStorage for saved metadata for this pool
+2. If found + valid cookie → redirect to their view (captain or participant)
 3. If not found → show join form (or pool info if locked)
 
 ---
@@ -26,45 +27,54 @@ When user visits `/pool/{code}`:
 ## User Persistence
 
 ### How Users Stay Logged In
-Store secrets in **localStorage** keyed by pool invite code:
+
+**Authentication**: httpOnly cookies set by the server on pool creation/join. Secrets are never exposed to client-side JavaScript.
+
+**Metadata**: localStorage stores non-sensitive user info keyed by pool invite code:
 ```javascript
 {
-  "pwp_ABC123": { "secret": "xxx", "name": "Mike", "is_captain": false },
-  "pwp_XYZ789": { "secret": "yyy", "name": "Arjan", "is_captain": true }
+  "pwp_ABC123": { "name": "Mike", "isCaptain": false },
+  "pwp_XYZ789": { "name": "Arjan", "isCaptain": true }
 }
 ```
 
 ### Returning User Flow
 1. User clicks link or enters code
-2. App checks localStorage for that pool
-3. If found: auto-authenticate, go to their view
-4. If not found: show join form
+2. Browser sends httpOnly cookie automatically
+3. Server authenticates via cookie → loads their view
+4. If cookie missing → show join form or trigger recovery flow
 
 ### Lost Access
-- **Participants**: Captain can share their unique link (Phase 3: easy share button)
-- **Captain**: Link saved in browser; if lost, no recovery (MVP)
+- **Recovery tokens**: If cookies are cleared, `RecoveryHandler` component triggers fallback auth to re-issue the cookie
+- **Participants**: Can rejoin the pool (same name re-authenticates)
+- **Captain**: Recovery token flow available; worst case, no recovery (acceptable for friend app)
 
 ---
 
 ## Navigation Structure
 
 ### Captain Views
-Captain has a **tab toggle** at top:
+Captain has a **3-tab interface** at top:
 ```
-┌─────────────────────────────────┐
-│  [Admin]  [My Picks]            │
-├─────────────────────────────────┤
-│  (content changes based on tab) │
-└─────────────────────────────────┘
+┌──────────────────────────────────────┐
+│  [Admin]  [My Picks]  [Players]      │
+├──────────────────────────────────────┤
+│  (content changes based on tab)      │
+└──────────────────────────────────────┘
 
 Admin tab:
-  ├── Pool Dashboard
-  ├── Edit Props
-  ├── View Participants
-  └── Mark Results
+  ├── Prop list with drag-and-drop reorder
+  ├── Collapsible "Add New Prop" form
+  ├── Edit props (modal)
+  ├── Delete props (draft mode only)
+  └── Mark correct answers (locked mode)
 
 My Picks tab:
-  └── Same as participant view
+  └── Same as participant picks view
+
+Players tab:
+  ├── View all participants
+  └── Access individual player picks with popularity stats
 ```
 
 ### Participant Views
@@ -106,12 +116,11 @@ Home → Join Pool → My Picks → Leaderboard
 
 **Elements**:
 
-- Tab toggle: [Admin] [My Picks]
-- Pool status indicator
-- Invite code card (big code, tap to copy)
-- Quick stats (X participants, Y props)
-- Action buttons: Add Props, Open Pool, Lock Betting, Mark Results
-- Participants list with pick status
+- 3-tab interface: [Admin] [My Picks] [Players]
+- Pool header with status indicator, invite code (tap to copy), share buttons
+- Prop list with drag-and-drop reorder and category grouping
+- Collapsible "Add New Prop" form
+- Status-aware action buttons (Open Pool, Lock Betting, based on pool state)
 - Link to leaderboard
 
 **Draft → Open Transition**:
@@ -206,7 +215,7 @@ Pools start in **draft** status. Captain adds props, then opens the pool.
 - Selected: primary color background, white text
 - Unselected: subtle background, dark text
 - Transition: 150ms ease
-- Easy to change before lock *(Phase 3: edit picks)*
+- Easy to change before lock *(Phase 4: edit picks)*
 
 ### Confirmation
 
@@ -224,10 +233,12 @@ Pools start in **draft** status. Captain adds props, then opens the pool.
 
 ### Loading States
 
-Use **skeleton screens** (not spinners):
-- Gray placeholder shapes matching content layout
-- Subtle pulse animation (200ms)
+**Current approach**: Spinners on buttons + skeleton loaders for page content.
+
+- Spinner on buttons during mutations (prevents double-submit)
+- Skeleton loaders for page-level data fetching
 - Content fades in when ready
+- Phase 4: Full skeleton screen replacements for all loading states
 
 ### Animations
 
@@ -246,7 +257,7 @@ Match design-principles timings:
 - Banner: "You're offline" with disabled actions
 - UI remains visible with last known state
 - Auto-retry when connection restored
-- *(Phase 4: queue picks offline, sync when back)*
+- *(Phase 5: queue picks offline, sync when back)*
 
 ### Invalid Input
 
@@ -292,29 +303,28 @@ Match design-principles timings:
 ## Component Checklist
 
 ### Core
-- [ ] Header (logo, pool name, status badge)
-- [ ] TabToggle (Admin / My Picks)
-- [ ] PoolCard (invite code, stats)
-- [ ] PropCard (question, options, points)
-- [ ] OptionButton (unselected, selected, correct, incorrect)
-- [ ] LeaderboardRow (rank, name, points, pick count)
-- [ ] ParticipantRow (name, pick status)
+- [x] PoolHeader (pool name, status badge, invite code, share buttons)
+- [x] CaptainTabsClient (Admin / My Picks / Players)
+- [x] PropCard (question, options, points, drag-and-drop)
+- [x] OptionButton (unselected, selected, correct, incorrect)
+- [x] LeaderboardRow (rank, name, points, pick count)
+- [x] ParticipantRow (name, pick status)
 
 ### Forms
-- [ ] TextField (label, input, error)
-- [ ] NumberField (points)
-- [ ] Button (primary, secondary, danger, disabled)
-- [ ] IconButton (copy, delete, edit)
+- [x] TextField (via shadcn/ui Input)
+- [x] NumberField (via shadcn/ui Input)
+- [x] Button (primary, secondary, danger, disabled - via shadcn/ui)
+- [x] IconButton (copy, delete, edit)
 
 ### Feedback
-- [ ] StatusBadge (draft, open, locked, completed)
-- [ ] Toast (success, error, info)
-- [ ] ConfirmDialog
-- [ ] EmptyState (icon, message, action)
-- [ ] Skeleton (card, row variations)
+- [x] StatusBadge (draft, open, locked, completed)
+- [x] Toast (success, error, info - via sonner)
+- [ ] ConfirmDialog (Phase 4)
+- [x] EmptyState (icon, message, action)
+- [x] Skeleton (via shadcn/ui Skeleton)
 
 ### Layout
-- [ ] PageContainer
-- [ ] Card
-- [ ] StickyFooter
+- [x] PageContainer
+- [x] Card (via shadcn/ui Card)
+- [ ] StickyFooter (Phase 4)
 

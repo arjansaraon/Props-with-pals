@@ -166,11 +166,12 @@ const SubmitPicksSchema = z.object({
 
 ## State Management
 
-### Phase 1: Server Components + Fetch
-Leverage Next.js App Router for simple data fetching:
+### Current: Server Components + Client Fetch
+
+Next.js App Router with Server Components for initial page loads, client-side `fetch` for mutations:
 
 ```typescript
-// Server Component - data fetching is straightforward
+// Server Component - data fetching
 async function PoolPage({ params }: { params: { code: string } }) {
   const pool = await getPool(params.code);
   return <PoolView pool={pool} />;
@@ -194,72 +195,59 @@ function SubmitPickButton({ poolCode, propId }: Props) {
 }
 ```
 
-### Phase 2: Add React Query for Polling
-When real-time updates are needed:
+### Future: React Query for Polling (Phase 4)
+
+React Query was deferred from Phase 2 - manual fetch + `router.refresh()` is sufficient for the MVP. When live polling is needed:
 
 ```typescript
-// Automatic polling
 const { data: pool } = useQuery({
   queryKey: ['pool', code],
   queryFn: () => fetchPool(code),
   refetchInterval: 10000, // 10s polling
 });
-
-// Optimistic updates for picks
-const mutation = useMutation({
-  mutationFn: submitPick,
-  onMutate: async (newPick) => {
-    // Optimistically update UI
-  },
-  onError: (err, newPick, context) => {
-    // Rollback on error
-  },
-});
 ```
 
 ### What Goes Where
-| Data | Location | Phase | Why |
-|------|----------|-------|-----|
-| User secrets | URL params | 1 | No localStorage in Phase 1 |
-| User secrets | localStorage | 2+ | Persist across sessions |
-| Pool data | Server Components | 1 | Simple, no client JS |
-| Pool data | React Query cache | 2+ | Auto-refresh, polling |
-| Form state | Local component state | All | Temporary, not shared |
-| UI state (modals, tabs) | Local component state | All | UI-specific |
+| Data | Location | Why |
+|------|----------|-----|
+| User secrets | httpOnly cookies | Secure, never exposed to JS |
+| User metadata (name, isCaptain) | localStorage | Enables returning-user experience |
+| Pool data | Server Components + fetch | Simple, works without client JS library |
+| Form state | Local component state | Temporary, not shared |
+| UI state (modals, tabs) | Local component state | UI-specific |
 
 ---
 
 ## Secret Storage
 
-### Current Approach: URL Params + localStorage
-```
-URL: /pool/ABC123/picks?secret=xyz789
-localStorage: { "pwp_ABC123": { secret: "xyz789", name: "Mike" } }
-```
+### Current Approach: httpOnly Cookies + Recovery Tokens
 
-**Pros**: Simple, shareable links work
-**Cons**: Secrets visible in browser history, server logs
+Implemented in Phase 2. Secrets are stored in **httpOnly cookies** set by the server on pool creation and join. They are never exposed to client-side JavaScript or visible in URLs.
 
-### Alternative: httpOnly Cookies
 ```
-POST /api/pool/[code]/join → Sets cookie
-Subsequent requests authenticated via cookie
+POST /api/pools → Sets httpOnly cookie (captain_secret)
+POST /api/pools/[code]/join → Sets httpOnly cookie (participant secret)
+All subsequent requests authenticated via cookie automatically
 ```
 
-**Pros**: More secure, not in URL/history
-**Cons**: More complex, sharing links requires different flow
+**Cookie details**:
+- httpOnly, Secure, SameSite=Lax
+- 30-day sliding window expiration
+- One cookie per pool (keyed by invite code)
 
-### Recommendation for MVP
-Stick with **URL params + localStorage**:
-- Simpler implementation
-- Shareable links are a key feature
-- Acceptable security for friend group app
-- Can migrate to cookies in Phase 3 if needed
+**Recovery tokens**: For users whose browsers don't support or clear cookies, a recovery flow exists via `POST /api/pools/[code]/recover` that re-issues the cookie.
 
-### Mitigations
-- Use HTTPS only (secrets encrypted in transit)
-- Short-lived URLs where possible
-- Clear guidance that links contain access credentials
+### Client-Side Storage
+
+**localStorage** stores only non-sensitive metadata:
+```javascript
+{
+  "pwp_ABC123": { "name": "Mike", "isCaptain": false },
+  "pwp_XYZ789": { "name": "Arjan", "isCaptain": true }
+}
+```
+
+Secrets are **never** stored in localStorage or exposed to JavaScript.
 
 ---
 
@@ -268,10 +256,12 @@ Stick with **URL params + localStorage**:
 ### Authentication & Authorization
 | Check | Where | Implementation |
 |-------|-------|----------------|
-| Captain access | API routes | Verify `captain_secret` matches pool |
-| Participant access | API routes | Verify `secret` matches participant |
+| Captain access | API routes | Verify `captain_secret` from httpOnly cookie matches pool |
+| Participant access | API routes | Verify `secret` from httpOnly cookie matches participant |
+| CSRF protection | API routes | Origin header validation on all mutations (POST/PATCH/DELETE) |
 | Pool exists | API routes | Return 404, not "invalid secret" (prevent enumeration) |
 | Pick timing | API routes | Server-side check `pool.status !== 'locked'` |
+| Recovery auth | API routes | Fallback token-based re-auth when cookies unavailable |
 
 ### Input Validation
 - **Zod schemas** for all API inputs
@@ -327,13 +317,14 @@ User-generated content (pool names, participant names, prop questions):
 ### Threat Model
 | Threat | Risk | Mitigation |
 |--------|------|------------|
-| Guess invite code | Low (32^6 = 1B combinations) | Rate limiting (10/min) |
-| Pool enumeration | Low | Aggressive rate limiting on GET pool |
-| Intercept captain secret | Medium | HTTPS, never log secrets |
+| Guess invite code | Low (32^6 = 1B combinations) | Rate limiting (Phase 4) |
+| Pool enumeration | Low | Rate limiting on GET pool (Phase 4) |
+| Intercept captain secret | Low | httpOnly cookies, HTTPS, never in URLs or logs |
 | Submit picks after lock | Medium | Server-side status check |
-| Impersonate participant | Low | Secret in URL, localStorage |
+| Impersonate participant | Low | httpOnly cookie auth, recovery tokens |
+| CSRF attacks | Low | Origin header validation on all mutations |
 | XSS via pool name | Low | React escapes by default |
-| Secret in server logs | Medium | Explicit redaction policy |
+| Secret in server logs | Low | Secrets never in URLs; explicit redaction policy |
 
 ---
 
@@ -438,7 +429,7 @@ Test API routes end-to-end:
 - Resolve prop → verify points calculated
 - Full flows with test database
 
-### E2E Tests (Phase 3 - Playwright)
+### E2E Tests (Phase 3/4 - Playwright)
 - Full user flows (captain creates pool → participants join → picks → results)
 - Mobile viewport testing
 
@@ -468,11 +459,14 @@ npm run test:coverage # Coverage report
 
 ### Client-Side
 ```
+httpOnly cookies:
+  - User secrets per pool (authentication, not accessible to JS)
+
 localStorage:
-  - User secrets per pool (authentication)
+  - User metadata per pool (name, isCaptain flag)
   - User preferences (future: dark mode)
 
-React Query cache:
+React Query cache (Phase 4):
   - Pool data (auto-refreshed)
   - Props list
   - Leaderboard
@@ -484,7 +478,7 @@ React Query cache:
 
 ---
 
-## Monitoring (Phase 3+)
+## Monitoring (Phase 4+)
 
 ### Error Tracking
 - Sentry for client and server errors
@@ -508,7 +502,7 @@ React Query cache:
 - Some code duplication in similar components
 - Manual type definitions (vs generated)
 
-### Address Before Phase 3
+### Address in Phase 3 (Current)
 - Extract shared components to component library
 - Add proper error boundaries
 - Improve loading state coverage

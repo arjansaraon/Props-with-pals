@@ -2,10 +2,9 @@ import { NextResponse } from 'next/server';
 import { pools, players, props } from '@/src/lib/schema';
 import { eq, desc, asc, isNotNull, and } from 'drizzle-orm';
 import { safeCompareSecrets } from '@/src/lib/auth';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import type * as schema from '@/src/lib/schema';
+import type { Database } from '@/src/lib/api-helpers';
 
-export type Database = LibSQLDatabase<typeof schema>;
+export type { Database };
 
 /**
  * Gets the leaderboard for a pool.

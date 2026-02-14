@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Progress } from '@/app/components/ui/progress';
 import { AlertCircle, Check, X, Lock } from 'lucide-react';
+import { Badge } from '@/app/components/ui/badge';
 import type { Prop, SubmittingState } from '@/app/types/domain';
 
 function groupPropsByCategory(props: Prop[]): { category: string | null; props: Prop[] }[] {
@@ -23,12 +24,17 @@ function groupPropsByCategory(props: Prop[]): { category: string | null; props: 
   return result;
 }
 
+interface PickError {
+  propId: string;
+  message: string;
+}
+
 interface PicksViewProps {
   poolStatus: string;
   propsList: Prop[];
   myPicks: Map<string, number>;
   submitting: SubmittingState | null;
-  pickErrorPropId: string | null;
+  pickError: PickError | null;
   pickedCount: number;
   allPicked: boolean;
   progressPercent: number;
@@ -41,7 +47,7 @@ export function PicksView({
   propsList,
   myPicks,
   submitting,
-  pickErrorPropId,
+  pickError,
   pickedCount,
   allPicked,
   progressPercent,
@@ -53,19 +59,17 @@ export function PicksView({
   return (
     <div className="space-y-4">
       {/* Status Alerts */}
-      {poolStatus !== 'open' && (
+      {poolStatus === 'completed' && (
         <Alert className="border-amber-200 bg-amber-50">
           <Lock className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
-            {poolStatus === 'locked'
-              ? 'This pool is locked. Picks can no longer be changed.'
-              : 'This pool is completed. Check the leaderboard for results!'}
+            This pool is completed. Check the leaderboard for results!
           </AlertDescription>
         </Alert>
       )}
 
       {/* Sticky Progress Tracker */}
-      {poolStatus === 'open' && totalProps > 0 && (
+      {poolStatus !== 'completed' && totalProps > 0 && (
         <div className="sticky top-0 z-10 bg-background py-3 -mx-4 px-4 border-b border-border">
           <div className="flex items-center justify-between mb-2">
             <span className={`text-sm font-medium ${allPicked ? 'text-emerald-600' : 'text-muted-foreground'}`}>
@@ -94,16 +98,15 @@ export function PicksView({
         groupPropsByCategory(propsList).map((group) => (
           <div key={group.category ?? '__uncategorized'}>
             {group.category && (
-              <div className="flex items-center gap-2 mt-4 mb-2">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-sm font-medium text-muted-foreground px-2">{group.category}</span>
+              <div className="flex items-center gap-3 mt-6 mb-3">
+                <Badge variant="secondary" className="text-sm">{group.category}</Badge>
                 <div className="h-px flex-1 bg-border" />
               </div>
             )}
             {group.props.map((prop) => {
               const myPick = myPicks.get(prop.id);
               const isResolved = prop.correctOptionIndex !== null;
-              const hasError = pickErrorPropId === prop.id;
+              const hasError = pickError?.propId === prop.id;
 
               return (
                 <Card
@@ -120,7 +123,7 @@ export function PicksView({
                     {hasError && (
                       <Alert variant="destructive" className="mb-3">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>Failed to save pick. Please try again.</AlertDescription>
+                        <AlertDescription>{pickError?.message}</AlertDescription>
                       </Alert>
                     )}
 
@@ -135,7 +138,7 @@ export function PicksView({
                           <button
                             key={index}
                             onClick={() => handlePick(prop.id, index)}
-                            disabled={poolStatus !== 'open' || submitting !== null}
+                            disabled={poolStatus === 'completed' || submitting !== null}
                             className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all duration-150 ${
                               isCorrect
                                 ? 'border-emerald-500 bg-emerald-50'
@@ -144,7 +147,7 @@ export function PicksView({
                                   : isSelected
                                     ? 'border-primary bg-primary/5'
                                     : 'bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/30'
-                            } ${poolStatus !== 'open' ? 'cursor-default' : 'cursor-pointer'}`}
+                            } ${poolStatus === 'completed' ? 'cursor-default' : 'cursor-pointer'}`}
                           >
                             <div className="flex items-center justify-between">
                               <span

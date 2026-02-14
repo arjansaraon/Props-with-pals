@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/app/components/ui/alert-dialog';
-import { Plus, Trash2, Check, Pencil, AlertTriangle, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Check, Pencil, AlertTriangle, GripVertical, X } from 'lucide-react';
 import type { Prop } from '@/app/types/domain';
 
 interface EditFormState {
@@ -102,6 +102,37 @@ export function PropCard({
             )}
 
             <div className="space-y-2">
+              <Label>Category (Optional)</Label>
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={editForm.category}
+                  onChange={(e) => onCategoryChange(e.target.value)}
+                  placeholder="e.g., First Quarter, Halftime"
+                  list="edit-category-suggestions"
+                  maxLength={50}
+                  className={editForm.category ? 'pr-8' : ''}
+                />
+                {editForm.category && (
+                  <button
+                    type="button"
+                    onClick={() => onCategoryChange('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              {existingCategories.length > 0 && (
+                <datalist id="edit-category-suggestions">
+                  {existingCategories.map((cat) => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label>Question</Label>
               <Input
                 type="text"
@@ -155,25 +186,6 @@ export function PropCard({
                 min="1"
                 className="w-32"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Category (Optional)</Label>
-              <Input
-                type="text"
-                value={editForm.category}
-                onChange={(e) => onCategoryChange(e.target.value)}
-                placeholder="e.g., First Quarter, Halftime"
-                list="edit-category-suggestions"
-                maxLength={50}
-              />
-              {existingCategories.length > 0 && (
-                <datalist id="edit-category-suggestions">
-                  {existingCategories.map((cat) => (
-                    <option key={cat} value={cat} />
-                  ))}
-                </datalist>
-              )}
             </div>
 
             <div className="flex gap-2">

@@ -71,6 +71,7 @@ describe('usePicks', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
+        json: async () => ({ code: 'INTERNAL_ERROR', message: 'Failed to submit pick' }),
       });
 
       const { result } = renderHook(() => usePicks(defaultProps));
@@ -81,10 +82,44 @@ describe('usePicks', () => {
 
       // Pick should be reverted (removed since no previous value)
       expect(result.current.myPicks.has('prop-1')).toBe(false);
-      expect(result.current.pickErrorPropId).toBe('prop-1');
+      expect(result.current.pickError?.propId).toBe('prop-1');
+      expect(result.current.pickError?.message).toBe('Failed to submit pick');
     });
 
-    it('does not submit picks when pool is not open', async () => {
+    it('shows session expired message on 401', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ code: 'UNAUTHORIZED', message: 'Missing secret' }),
+      });
+
+      const { result } = renderHook(() => usePicks(defaultProps));
+
+      await act(async () => {
+        await result.current.handlePick('prop-1', 0);
+      });
+
+      expect(result.current.pickError?.message).toBe('Session expired. Please refresh the page.');
+    });
+
+    it('shows network error message on fetch failure', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+      const { result } = renderHook(() => usePicks(defaultProps));
+
+      await act(async () => {
+        await result.current.handlePick('prop-1', 0);
+      });
+
+      expect(result.current.pickError?.message).toBe('Network error. Please check your connection and try again.');
+    });
+
+    it('allows picks when pool is locked', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      });
+
       const { result } = renderHook(() =>
         usePicks({ ...defaultProps, poolStatus: 'locked' })
       );
@@ -93,7 +128,19 @@ describe('usePicks', () => {
         await result.current.handlePick('prop-1', 0);
       });
 
-      // fetch should not be called
+      expect(mockFetch).toHaveBeenCalled();
+      expect(result.current.myPicks.get('prop-1')).toBe(0);
+    });
+
+    it('does not submit picks when pool is completed', async () => {
+      const { result } = renderHook(() =>
+        usePicks({ ...defaultProps, poolStatus: 'completed' })
+      );
+
+      await act(async () => {
+        await result.current.handlePick('prop-1', 0);
+      });
+
       expect(mockFetch).not.toHaveBeenCalled();
     });
   });

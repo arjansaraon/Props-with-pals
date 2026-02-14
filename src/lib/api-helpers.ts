@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pools, type Pool } from '@/src/lib/schema';
-import { eq } from 'drizzle-orm';
+import { pools, players, type Pool, type Player } from '@/src/lib/schema';
+import { eq, and } from 'drizzle-orm';
 import { getSecret, safeCompareSecrets } from '@/src/lib/auth';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import type * as schema from '@/src/lib/schema';
@@ -83,6 +83,71 @@ export async function getPoolWithAuth(
   }
 
   return { success: true, pool, isCaptain };
+}
+
+/**
+ * Result of getPoolWithPlayerAuth - either success with pool+player or error response
+ */
+export type PlayerAuthResult =
+  | { success: true; pool: Pool; player: Player }
+  | { success: false; response: Response };
+
+/**
+ * Finds a pool by invite code and authenticates a player by their secret.
+ * Used for player-facing routes (e.g. submitting picks).
+ */
+export async function getPoolWithPlayerAuth(
+  code: string,
+  request: Request,
+  database: Database
+): Promise<PlayerAuthResult> {
+  const secret = await getSecret(code, request);
+
+  if (!secret) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { code: 'UNAUTHORIZED', message: 'Missing secret' },
+        { status: 401 }
+      ),
+    };
+  }
+
+  const poolResult = await database
+    .select()
+    .from(pools)
+    .where(eq(pools.inviteCode, code))
+    .limit(1);
+
+  if (poolResult.length === 0) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { code: 'POOL_NOT_FOUND', message: 'Pool not found' },
+        { status: 404 }
+      ),
+    };
+  }
+
+  const pool = poolResult[0];
+
+  const playerResult = await database
+    .select()
+    .from(players)
+    .where(and(eq(players.poolId, pool.id), eq(players.secret, secret)))
+    .limit(1);
+
+  if (playerResult.length === 0) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { code: 'UNAUTHORIZED', message: 'Invalid secret' },
+        { status: 401 }
+      ),
+    };
+  }
+
+  return { success: true, pool, player: playerResult[0] };
 }
 
 /**

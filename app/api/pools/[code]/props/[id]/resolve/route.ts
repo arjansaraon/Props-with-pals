@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { pools, props, picks, players } from '@/src/lib/schema';
 import { eq, and, sum, inArray } from 'drizzle-orm';
 import { ResolveSchema } from '@/src/lib/validators';
-import { getSecret, requireValidOrigin, safeCompareSecrets } from '@/src/lib/auth';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import type * as schema from '@/src/lib/schema';
+import { getPoolWithAuth } from '@/src/lib/api-helpers';
+import type { Database } from '@/src/lib/api-helpers';
 
-export type Database = LibSQLDatabase<typeof schema>;
+export type { Database };
 
 /**
  * Resolves (or re-resolves) a prop by setting the correct answer.
@@ -22,39 +21,9 @@ export async function resolvePropHandler(
   database: Database
 ): Promise<Response> {
   try {
-    // Get secret from cookie (preferred) or query params (migration fallback)
-    const secret = await getSecret(code, request);
-
-    if (!secret) {
-      return NextResponse.json(
-        { code: 'UNAUTHORIZED', message: 'Missing secret' },
-        { status: 401 }
-      );
-    }
-
-    // Find pool by invite code
-    const poolResult = await database
-      .select()
-      .from(pools)
-      .where(eq(pools.inviteCode, code))
-      .limit(1);
-
-    if (poolResult.length === 0) {
-      return NextResponse.json(
-        { code: 'POOL_NOT_FOUND', message: 'Pool not found' },
-        { status: 404 }
-      );
-    }
-
-    const pool = poolResult[0];
-
-    // Check authorization (using timing-safe comparison)
-    if (!safeCompareSecrets(pool.captainSecret, secret)) {
-      return NextResponse.json(
-        { code: 'UNAUTHORIZED', message: 'Invalid secret' },
-        { status: 401 }
-      );
-    }
+    const authResult = await getPoolWithAuth(code, request, database, { requireCaptain: true });
+    if (!authResult.success) return authResult.response;
+    const { pool } = authResult;
 
     // Check pool status - must be 'locked' to resolve
     if (pool.status === 'open') {
@@ -99,6 +68,14 @@ export async function resolvePropHandler(
     }
 
     const prop = propResult[0];
+
+    // Cannot resolve a voided prop
+    if (prop.status === 'voided') {
+      return NextResponse.json(
+        { code: 'PROP_VOIDED', message: 'Cannot resolve a voided prop' },
+        { status: 400 }
+      );
+    }
 
     // Note: Re-resolving is allowed while pool is locked (captain can change answer)
 
@@ -246,10 +223,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string; id: string }> }
 ): Promise<Response> {
-  // CSRF protection
-  const csrfError = requireValidOrigin(request);
-  if (csrfError) return csrfError;
-
   const { db } = await import('@/src/lib/db');
   const { code, id } = await params;
   return resolvePropHandler(request, code, id, db);

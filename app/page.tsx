@@ -237,11 +237,6 @@ export default function Home() {
                     placeholder="e.g., superbowl-2026"
                     maxLength={20}
                   />
-                  {customCode && (
-                    <p className="text-xs text-muted-foreground">
-                      Your pool link: <span className="font-mono">/pool/{normalizeNameForCode(captainName)}{normalizeNameForCode(captainName) && '-'}{customCode}</span>
-                    </p>
-                  )}
                   <p className="text-xs text-muted-foreground">
                     A code has been suggested. Feel free to customize it.
                   </p>

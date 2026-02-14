@@ -154,23 +154,26 @@ active → removed
 
 | Actor | Identified By | Can Do |
 |-------|---------------|--------|
-| Captain | `invite_code` + `captain_secret` | Everything for their pool (admin + their own picks) |
-| Participant | `invite_code` + `participant.secret` | View props, submit picks, view leaderboard |
+| Captain | `invite_code` + `captain_secret` (httpOnly cookie) | Everything for their pool (admin + their own picks) |
+| Participant | `invite_code` + `participant.secret` (httpOnly cookie) | View props, submit picks, view leaderboard |
 | Anonymous | `invite_code` only | See pool exists, join as new participant |
 
 **Notes:**
-- Captain uses `captain_secret` for both admin actions AND their own picks (one URL to save)
+- Captain uses `captain_secret` for both admin actions AND their own picks
 - Secrets are UUIDs generated with `crypto.randomUUID()`
 - Secrets stored as plain strings (not hashed) - acceptable for low-stakes friend app
-- Phase 1: Secrets passed via URL params only (no localStorage)
-- Phase 2+: Secrets persisted in localStorage
-- Picks hidden from other participants (Phase 3: visible after lock)
+- Secrets stored in **httpOnly cookies** (never exposed to JavaScript or URLs)
+- CSRF protection via Origin header validation on all mutations
+- Recovery tokens available for users whose cookies are cleared/unavailable
+- localStorage stores only non-sensitive metadata (name, isCaptain flag)
+- Player picks are visible to others after the pool is locked
 
 **URL Structure:**
-- Join pool: `/pool/{invite_code}` - anyone can join
-- Captain dashboard: `/pool/{invite_code}/captain?secret={captain_secret}` - includes captain's picks
-- Participant view: `/pool/{invite_code}/picks?secret={participant_secret}`
-- Shareable participant link includes their secret (Phase 3: easy copy/share)
+- Join pool: `/pool/{code}` - anyone can join
+- Captain dashboard: `/pool/{code}/captain` - auth via httpOnly cookie
+- Participant picks: `/pool/{code}/picks` - auth via httpOnly cookie
+- Player picks view: `/pool/{code}/player/{participantId}` - view individual player's picks
+- Leaderboard: `/pool/{code}/leaderboard` - public
 
 ## Future-Proofing Fields
 

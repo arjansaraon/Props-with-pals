@@ -34,7 +34,7 @@ export const pools = sqliteTable('pools', {
 // ============================================
 export const props = sqliteTable('props', {
   id: text('id').primaryKey(),
-  poolId: text('pool_id').notNull().references(() => pools.id),
+  poolId: text('pool_id').notNull().references(() => pools.id, { onDelete: 'cascade' }),
   questionText: text('question_text').notNull(),
   options: text('options', { mode: 'json' }).notNull().$type<string[]>(),
   pointValue: integer('point_value').notNull(),
@@ -54,7 +54,7 @@ export const props = sqliteTable('props', {
 // ============================================
 export const players = sqliteTable('players', {
   id: text('id').primaryKey(),
-  poolId: text('pool_id').notNull().references(() => pools.id),
+  poolId: text('pool_id').notNull().references(() => pools.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   secret: text('secret').notNull(),
   totalPoints: integer('total_points').notNull().default(0),
@@ -73,8 +73,8 @@ export const players = sqliteTable('players', {
 // ============================================
 export const picks = sqliteTable('picks', {
   id: text('id').primaryKey(),
-  playerId: text('player_id').notNull().references(() => players.id),
-  propId: text('prop_id').notNull().references(() => props.id),
+  playerId: text('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+  propId: text('prop_id').notNull().references(() => props.id, { onDelete: 'cascade' }),
   selectedOptionIndex: integer('selected_option_index').notNull(),
   pointsEarned: integer('points_earned'),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
@@ -91,8 +91,8 @@ export const picks = sqliteTable('picks', {
 export const recoveryTokens = sqliteTable('recovery_tokens', {
   id: text('id').primaryKey(),
   token: text('token').notNull().unique(),
-  playerId: text('player_id').notNull().references(() => players.id),
-  poolId: text('pool_id').notNull().references(() => pools.id),
+  playerId: text('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+  poolId: text('pool_id').notNull().references(() => pools.id, { onDelete: 'cascade' }),
   expiresAt: text('expires_at').notNull(),
   usedAt: text('used_at'),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),

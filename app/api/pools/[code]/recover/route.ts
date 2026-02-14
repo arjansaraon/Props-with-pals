@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as schema from '@/src/lib/schema';
 import { pools } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
-import { setPoolSecretCookie, requireValidOrigin } from '@/src/lib/auth';
+import { setPoolSecretCookie } from '@/src/lib/auth';
 import { redeemToken } from '@/src/lib/recovery-tokens';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
+import type { Database } from '@/src/lib/api-helpers';
 
-export type Database = LibSQLDatabase<typeof schema>;
+export type { Database };
 
 /**
  * Recovers a player's session using an opaque recovery token.
@@ -75,9 +74,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ): Promise<Response> {
-  const csrfError = requireValidOrigin(request);
-  if (csrfError) return csrfError;
-
   const { db } = await import('@/src/lib/db');
   const { code } = await params;
   return recoverHandler(request, code, db);

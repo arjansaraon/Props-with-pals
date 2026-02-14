@@ -81,7 +81,7 @@ When moving **up on leaderboard**:
 Better to do less, perfectly.
 
 **Guidelines**:
-- Never lose a confirmed pick (Phase 4: queue picks offline)
+- Never lose a confirmed pick (Phase 5: queue picks offline)
 - Always show accurate scores
 - Graceful offline handling
 - Clear error messages
@@ -149,11 +149,11 @@ Use consistent spacing (Tailwind defaults):
 ### Micro-interactions
 - **Transitions**: 150ms ease for hover, 200ms for reveals
 - **Feedback**: Subtle scale (1.02) on tap, color change on selection
-- **Loading**: Skeleton screens, not spinners
+- **Loading**: Spinners on buttons during mutations, skeleton loaders for page content (Phase 4: full skeleton screens)
 
 ---
 
-## Dark Mode (Phase 4)
+## Dark Mode (Phase 5)
 
 Swap CSS variables - same structure, inverted palette:
 - `--color-bg`: #0F172A (dark slate)

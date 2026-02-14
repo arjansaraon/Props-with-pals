@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent } from '@/app/components/ui/card';
+import { Badge } from '@/app/components/ui/badge';
 import { PropCard } from './prop-card';
 import { AddPropForm } from './add-prop-form';
 import type { Prop } from '../types';
@@ -178,9 +179,8 @@ export function AdminTab({
       {grouped.map((group) => (
         <div key={group.category ?? '__uncategorized'}>
           {group.category && (
-            <div className="flex items-center gap-2 mt-4 mb-2">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-sm font-medium text-muted-foreground px-2">{group.category}</span>
+            <div className="flex items-center gap-3 mt-6 mb-3">
+              <Badge variant="secondary" className="text-sm">{group.category}</Badge>
               <div className="h-px flex-1 bg-border" />
             </div>
           )}
@@ -218,7 +218,7 @@ export function AdminTab({
         <div className="space-y-4 mb-6">
           <h2 className="text-lg font-semibold text-foreground">Props ({propsList.length})</h2>
           <DndContext
-            sensors={isDndEnabled ? sensors : []}
+            sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={onDragEnd}
           >
@@ -234,11 +234,7 @@ export function AdminTab({
 
       {/* Empty State */}
       {propsList.length === 0 && poolStatus === 'open' && (
-        <Card className="shadow-sm mb-6">
-          <CardContent className="py-6">
-            <p className="text-muted-foreground text-center">No props yet. Add your first prop below!</p>
-          </CardContent>
-        </Card>
+        <p className="text-sm text-muted-foreground text-center mb-6">No props yet. Add your first prop below.</p>
       )}
 
       {/* Add Prop Form */}

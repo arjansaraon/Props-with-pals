@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pools } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
-import { requireValidOrigin } from '@/src/lib/auth';
+
 import { UpdatePoolSchema } from '@/src/lib/validators';
 import {
   getPoolWithAuth,
@@ -189,10 +189,6 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ): Promise<Response> {
-  // CSRF protection
-  const csrfError = requireValidOrigin(request);
-  if (csrfError) return csrfError;
-
   const { db } = await import('@/src/lib/db');
   const { code } = await params;
   return updatePoolHandler(request, code, db);

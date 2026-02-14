@@ -110,74 +110,59 @@ export function computePoolSummary(
   statsMap: Map<string, PropPickStats>,
   propsList: PropInfo[],
 ): PoolPickSummary {
-  // Only consider props that have at least 1 pick
-  const propsWithPicks = propsList.filter((p) => {
-    const stats = statsMap.get(p.id);
-    return stats && stats.totalPicks > 0;
-  });
+  // Pair each prop with its stats, filtering to props with at least 1 pick
+  const propsWithStats = propsList
+    .map((p) => ({ prop: p, stats: statsMap.get(p.id) }))
+    .filter((x): x is { prop: PropInfo; stats: PropPickStats } =>
+      !!x.stats && x.stats.totalPicks > 0);
 
-  if (propsWithPicks.length === 0) {
+  if (propsWithStats.length === 0) {
     return { mostAgreed: null, mostDivisive: null, biggestUpset: null };
   }
 
   // Most agreed: highest mostPopularPercent
-  let mostAgreedProp: PropInfo | null = null;
+  let mostAgreed: PoolPickSummary['mostAgreed'] = null;
   let highestPercent = -1;
-  for (const prop of propsWithPicks) {
-    const stats = statsMap.get(prop.id)!;
+  for (const { prop, stats } of propsWithStats) {
     if (stats.mostPopularPercent > highestPercent) {
       highestPercent = stats.mostPopularPercent;
-      mostAgreedProp = prop;
+      mostAgreed = {
+        questionText: prop.questionText,
+        optionText: prop.options[stats.mostPopularIndex],
+        percent: stats.mostPopularPercent,
+      };
     }
   }
 
   // Most divisive: lowest mostPopularPercent (most evenly split)
-  let mostDivisiveProp: PropInfo | null = null;
+  let mostDivisive: PoolPickSummary['mostDivisive'] = null;
   let lowestPercent = 101;
-  for (const prop of propsWithPicks) {
-    const stats = statsMap.get(prop.id)!;
+  for (const { prop, stats } of propsWithStats) {
     if (stats.mostPopularPercent < lowestPercent) {
       lowestPercent = stats.mostPopularPercent;
-      mostDivisiveProp = prop;
+      mostDivisive = {
+        questionText: prop.questionText,
+        percent: stats.mostPopularPercent,
+      };
     }
   }
 
   // Biggest upset: resolved prop where most popular pick was wrong,
   // with the highest confidence (highest mostPopularPercent among upsets)
-  let biggestUpsetProp: PropInfo | null = null;
+  let biggestUpset: PoolPickSummary['biggestUpset'] = null;
   let upsetPercent = -1;
-  for (const prop of propsWithPicks) {
+  for (const { prop, stats } of propsWithStats) {
     if (prop.correctOptionIndex === null) continue;
-    const stats = statsMap.get(prop.id)!;
     if (stats.mostPopularIndex !== prop.correctOptionIndex && stats.mostPopularPercent > upsetPercent) {
       upsetPercent = stats.mostPopularPercent;
-      biggestUpsetProp = prop;
+      biggestUpset = {
+        questionText: prop.questionText,
+        popularOption: prop.options[stats.mostPopularIndex],
+        correctOption: prop.options[prop.correctOptionIndex],
+        popularPercent: stats.mostPopularPercent,
+      };
     }
   }
-
-  const mostAgreed = mostAgreedProp
-    ? {
-        questionText: mostAgreedProp.questionText,
-        optionText: mostAgreedProp.options[statsMap.get(mostAgreedProp.id)!.mostPopularIndex],
-        percent: highestPercent,
-      }
-    : null;
-
-  const mostDivisive = mostDivisiveProp
-    ? {
-        questionText: mostDivisiveProp.questionText,
-        percent: lowestPercent,
-      }
-    : null;
-
-  const biggestUpset = biggestUpsetProp
-    ? {
-        questionText: biggestUpsetProp.questionText,
-        popularOption: biggestUpsetProp.options[statsMap.get(biggestUpsetProp.id)!.mostPopularIndex],
-        correctOption: biggestUpsetProp.options[biggestUpsetProp.correctOptionIndex!],
-        popularPercent: upsetPercent,
-      }
-    : null;
 
   return { mostAgreed, mostDivisive, biggestUpset };
 }

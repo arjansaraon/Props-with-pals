@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 
 interface AddPropFormProps {
   isOpen: boolean;
@@ -58,6 +58,37 @@ export function AddPropForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Category (Optional)</Label>
+            <div className="relative">
+              <Input
+                type="text"
+                value={category}
+                onChange={(e) => onCategoryChange(e.target.value)}
+                placeholder="e.g., First Quarter, Halftime"
+                list="category-suggestions"
+                maxLength={50}
+                className={category ? 'pr-8' : ''}
+              />
+              {category && (
+                <button
+                  type="button"
+                  onClick={() => onCategoryChange('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            {existingCategories.length > 0 && (
+              <datalist id="category-suggestions">
+                {existingCategories.map((cat) => (
+                  <option key={cat} value={cat} />
+                ))}
+              </datalist>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label>Question</Label>
             <Input
@@ -115,25 +146,6 @@ export function AddPropForm({
               required
               className="w-32"
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Category (Optional)</Label>
-            <Input
-              type="text"
-              value={category}
-              onChange={(e) => onCategoryChange(e.target.value)}
-              placeholder="e.g., First Quarter, Halftime"
-              list="category-suggestions"
-              maxLength={50}
-            />
-            {existingCategories.length > 0 && (
-              <datalist id="category-suggestions">
-                {existingCategories.map((cat) => (
-                  <option key={cat} value={cat} />
-                ))}
-              </datalist>
-            )}
           </div>
 
           <Button type="submit" disabled={isAddingProp}>

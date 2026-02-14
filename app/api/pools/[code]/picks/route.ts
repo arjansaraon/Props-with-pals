@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pools, players, props, picks } from '@/src/lib/schema';
+import { props, picks } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { SubmitPickSchema } from '@/src/lib/validators';
-import { getSecret, requireValidOrigin } from '@/src/lib/auth';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import type * as schema from '@/src/lib/schema';
+import { getPoolWithPlayerAuth } from '@/src/lib/api-helpers';
+import type { Database } from '@/src/lib/api-helpers';
 
-export type Database = LibSQLDatabase<typeof schema>;
+export type { Database };
 
 /**
  * Submits a pick for a participant.
@@ -20,60 +19,17 @@ export async function submitPickHandler(
   database: Database
 ): Promise<Response> {
   try {
-    // Get secret from cookie (preferred) or query params (migration fallback)
-    const secret = await getSecret(code, request);
+    const authResult = await getPoolWithPlayerAuth(code, request, database);
+    if (!authResult.success) return authResult.response;
+    const { pool, player: participant } = authResult;
 
-    if (!secret) {
+    // Check pool status - picks allowed in 'open' and 'locked', blocked in 'completed'
+    if (pool.status === 'completed') {
       return NextResponse.json(
-        { code: 'UNAUTHORIZED', message: 'Missing secret' },
-        { status: 401 }
-      );
-    }
-
-    // Find pool by invite code
-    const poolResult = await database
-      .select()
-      .from(pools)
-      .where(eq(pools.inviteCode, code))
-      .limit(1);
-
-    if (poolResult.length === 0) {
-      return NextResponse.json(
-        { code: 'POOL_NOT_FOUND', message: 'Pool not found' },
-        { status: 404 }
-      );
-    }
-
-    const pool = poolResult[0];
-
-    // Check pool status - must be 'open' to submit picks
-    if (pool.status !== 'open') {
-      return NextResponse.json(
-        { code: 'POOL_LOCKED', message: 'Cannot submit picks to locked or completed pool' },
+        { code: 'POOL_COMPLETED', message: 'Cannot submit picks to a completed pool' },
         { status: 403 }
       );
     }
-
-    // Find participant by secret
-    const participantResult = await database
-      .select()
-      .from(players)
-      .where(
-        and(
-          eq(players.poolId, pool.id),
-          eq(players.secret, secret)
-        )
-      )
-      .limit(1);
-
-    if (participantResult.length === 0) {
-      return NextResponse.json(
-        { code: 'UNAUTHORIZED', message: 'Invalid secret' },
-        { status: 401 }
-      );
-    }
-
-    const participant = participantResult[0];
 
     // Parse and validate request body
     const body = await request.json();
@@ -194,10 +150,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ): Promise<Response> {
-  // CSRF protection
-  const csrfError = requireValidOrigin(request);
-  if (csrfError) return csrfError;
-
   const { db } = await import('@/src/lib/db');
   const { code } = await params;
   return submitPickHandler(request, code, db);

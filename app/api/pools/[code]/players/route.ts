@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as schema from '@/src/lib/schema';
-import { players, pools } from '@/src/lib/schema';
+import { players } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
-import { getSecret, safeCompareSecrets } from '@/src/lib/auth';
+import { safeCompareSecrets } from '@/src/lib/auth';
 import { getOrCreateTokensForPool } from '@/src/lib/recovery-tokens';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
+import { getPoolWithAuth } from '@/src/lib/api-helpers';
+import type { Database } from '@/src/lib/api-helpers';
 
-// Export Database type for testing
-export type Database = LibSQLDatabase<typeof schema>;
+export type { Database };
 
 /**
  * Gets all participants in a pool (captain only).
@@ -19,30 +18,9 @@ export async function getPlayersHandler(
   database: Database
 ): Promise<Response> {
   try {
-    // Find pool by invite code
-    const poolResult = await database
-      .select()
-      .from(pools)
-      .where(eq(pools.inviteCode, code))
-      .limit(1);
-
-    if (poolResult.length === 0) {
-      return NextResponse.json(
-        { code: 'POOL_NOT_FOUND', message: 'Pool not found' },
-        { status: 404 }
-      );
-    }
-
-    const pool = poolResult[0];
-
-    // Verify captain authorization (using timing-safe comparison)
-    const secret = await getSecret(code, request);
-    if (!secret || !safeCompareSecrets(secret, pool.captainSecret)) {
-      return NextResponse.json(
-        { code: 'UNAUTHORIZED', message: 'Captain access required' },
-        { status: 401 }
-      );
-    }
+    const authResult = await getPoolWithAuth(code, request, database, { requireCaptain: true });
+    if (!authResult.success) return authResult.response;
+    const { pool } = authResult;
 
     // Fetch all participants for this pool
     // Note: We fetch secrets internally to determine captain status, but never expose them in the response

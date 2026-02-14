@@ -1,11 +1,11 @@
 # Roadmap: Props-With-Pals
 
-> Last updated: February 2026
+> Last updated: February 14, 2026
 
 ## Current Status
 
-**Phase**: MVP Core (Phase 2)
-**Focus**: Frontend - cookie auth, localStorage, captain tabs, toasts, mobile
+**Phase**: Polish (Phase 3)
+**Focus**: Real-user testing, UX polish, deploy to production
 
 ---
 
@@ -80,159 +80,172 @@ One captain, one participant, one prop, one pick → score calculated. No polish
   - [x] `POST /api/pools/[code]/picks` - submit pick (overwrites existing)
   - [x] `GET /api/pools/[code]/leaderboard` - get ranked participants
 - [x] Basic UI pages (create, captain view, join, participant view, leaderboard)
-- [ ] Deploy to Vercel
+- [x] Deploy to Vercel
 
 **Exit Criteria**: Complete one full flow manually - create pool, join, pick, score, see leaderboard. All tests passing.
 
 ---
 
-## Phase 2: MVP Core (Current)
+## Phase 2: MVP Core (Complete)
 
 **Goal**: Run a complete prop bet pool for a single event
 
-### Backend (Complete)
+### Backend
 
 - [x] Edit pool details (name, description)
 - [x] Add multiple props
 - [x] Edit/delete props before lock
 - [x] Pool status flow (draft → open → locked → completed)
-- [x] View all participants (`GET /api/pools/[code]/participants`)
+- [x] View all participants (`GET /api/pools/[code]/players`)
 - [x] Mark multiple props as correct
 - [x] View detailed leaderboard
 - [x] Pool description field
-- [x] View all props with point values (API ready)
-- [x] Submit picks for all props (API ready)
-- [x] View my picks (API ready)
-- [x] View leaderboard with rankings (API ready)
-- [x] Backend API routes complete (176 tests passing)
+- [x] View all props with point values
+- [x] Submit picks for all props
+- [x] View my picks
+- [x] View leaderboard with rankings
+- [x] Backend API routes complete (321 tests passing)
 - [x] Shared API helpers (`getPoolWithAuth`, `toPublicPool`)
 - [x] Zod validators for all mutations
+- [x] Prop reorder with drag-and-drop (`POST /api/pools/[code]/props/reorder`)
+- [x] Pick popularity stats (`GET /api/pools/[code]/props/[id]/picks-count`)
 
-### Security (Complete)
+### Security
 
 - [x] Migrate from URL query param secrets to HTTP-only cookies
-  - Implemented: Cookie-based auth with 30-day sliding window
-  - Backward compatible: Query params still work during migration
+  - Cookie-based auth with 30-day sliding window
+  - Secrets never exposed in URLs or JavaScript
 - [x] Add CSRF protection for all state-changing operations (POST/PATCH/DELETE)
-  - Implemented: Origin header validation
+  - Origin header validation
+- [x] Recovery tokens for fallback auth when cookies unavailable
+  - `POST /api/pools/[code]/recover`
 
-### Frontend (In Progress)
+### Frontend
 
-Priority items for MVP:
-
-- [ ] Remove secrets from URLs (cookie-only auth)
-  - Stop passing `?secret=` in redirects/links
-  - Cookies handle auth automatically
-- [ ] localStorage for user metadata (name, isCaptain flag)
-  - NOT for secrets (httpOnly cookies are more secure)
+- [x] Remove secrets from URLs (cookie-only auth)
+- [x] localStorage for user metadata (name, isCaptain flag)
+  - NOT for secrets (httpOnly cookies handle auth)
   - Enables "returning user" experience
-- [ ] Captain tab toggle (Admin / My Picks)
-  - Core UX from design guide
-  - Captain can switch between managing pool and making picks
-- [ ] Toast notifications (success/error feedback)
-  - Simple component for user feedback
-  - "Picks saved!", "Invite code copied!", error messages
-- [ ] Mobile-responsive cleanup
-  - Full-width inputs/buttons on mobile
-  - Proper touch targets (44px+)
-- [ ] Loading states (simple spinners, not skeletons)
-- [ ] Basic error handling (inline messages)
+- [x] Captain 3-tab interface (Admin / My Picks / Players)
+  - Captain can switch between managing pool, making picks, and viewing players
+- [x] Toast notifications via sonner (success/error feedback)
+- [x] Mobile-responsive layout (full-width inputs/buttons, 44px+ touch targets)
+- [x] Loading states (spinners on buttons, skeleton loaders for pages)
+- [x] Inline error handling and validation messages
+- [x] Prop categories (e.g., "1st Quarter", "2nd Quarter")
+- [x] Drag-and-drop prop reordering with visual feedback
+- [x] Collapsible "Add New Prop" form
+- [x] Pick popularity (see how many players selected each option)
+- [x] Player picks view (see what each participant picked, after lock)
+- [x] RecoveryHandler component for token-based auth fallback
+- [x] Share buttons for invite code
+- [x] Full shadcn/ui component library
 
 **Exit Criteria**: Successfully run a prop bet pool with 5+ friends
 
 ---
 
-## Phase 3: Polish
+## Phase 3: Polish (Current)
 
-**Goal**: Improve based on MVP learnings
+**Goal**: Test with real users, fix issues, deploy to production
 
-### UX Improvements
+### Deploy & Test
 
-General
+- [x] Deploy to Vercel
+- [ ] Run a real pool with 5+ friends
+- [ ] Collect UX feedback from real users
 
-- [ ] Color scheme is too dark
-- [ ] Create pool flow
-- [ ] Join pool flow
-- [ ] Break down files that are too large, test coverage, security review, and code review
-- [ ] Rework the roadmap
-- [ ] Full UI test for creating a real pool and multiple participants on the server
+### Pre-Launch Fixes
 
-Participant
+- [ ] Add confirmation dialogs for destructive actions (lock pool, mark correct, delete prop)
+- [ ] Add basic auto-refresh on leaderboard page (`setInterval` + `router.refresh()`)
+- [ ] Show captain recovery URL prominently on pool creation success screen
+- [ ] Clarify draft vs open status (docs say draft→open, but pools create as open — resolve inconsistency)
+- [ ] Verify player picks view is gated by pool status (no peeking before lock)
 
-- [ ] Need to be able to submit picks
-- [ ] Easy to log back in
+### UX Polish
 
-Captain
+- [ ] Review and refine create pool flow
+- [ ] Review and refine join pool flow
+- [ ] Verify participant returning-user experience (localStorage + cookies)
+- [ ] Mobile device testing (real devices, not just responsive mode)
 
-- [ ] Add New Prop should be an action button that then expands, not always open at the top
-- [ ] Pools should start open
+### Code Quality
 
-**Exit Criteria**: Smooth, polished experience for casual use
+- [ ] Break down files that are too large (300-line guideline)
+- [ ] Security review
+- [ ] Code review pass
+- [ ] E2E tests for critical flows (Playwright)
+
+**Exit Criteria**: Smooth, polished experience validated by real users
 
 ---
 
-## Phase 4: Add features
+## Phase 4: Features & Infrastructure
 
-**Goal**: Improve based on MVP learnings
+**Goal**: Add features based on real-user feedback, harden infrastructure
 
-### UX Improvements (Deferred from Phase 2)
+### Data Fetching & UX
 
-- [ ] React Query for data fetching
-  - Caching, automatic refetching, deduplication
-  - Polling for live updates
+- [ ] React Query for data fetching (caching, automatic refetching, polling)
 - [ ] Skeleton loading states (replace spinners)
 - [ ] Confirmation modals (lock pool, mark correct, delete prop)
 - [ ] Smart routing based on localStorage
   - `/pool/{code}` auto-redirects to captain/picks view if user has saved session
+- [ ] Celebratory feedback (Duolingo-style animations for correct picks)
 
 ### Features
 
 - [ ] Edit picks before lock
-- [ ] View other players' picks (after lock)
-- [ ] View picks per question
-- [ ] 'Spreadsheet' view
-- [ ] Prop categories/sections
+- [ ] "Spreadsheet" view (all players × all props grid)
 - [ ] Tiebreaker questions
-- [ ] Track payments
-- [ ] Captains can remove props or mark them as null
+- [ ] Track payments (buy-in, paid status)
+- [ ] Captains can void/nullify props
 - [ ] Captains can remove participants
 
-### Technical
+### Data Integrity & UX
 
-- [ ] E2E tests (Playwright) - critical user flows
+- [ ] Guard prop option edits when picks exist (block or cascade-delete with warning)
+- [ ] Batch pick submission endpoint (or progress indicator for sequential saves)
+- [ ] Cross-device session transfer ("send login link to myself" flow)
+- [ ] Auto-prompt "mark pool complete" when all props are resolved
+- [ ] Verify invite code collision handling for auto-generated codes
+
+### Infrastructure
+
 - [ ] Rate limiting (Upstash Redis or similar)
   - Priority: `/api/pools` (creation), `/api/pools/[code]/join` (joining)
-  - Prevents abuse before going public
 - [ ] Error tracking (Sentry)
 
-**Exit Criteria**: Full fledged pool app
+**Exit Criteria**: Full-fledged pool app hardened for wider use
 
 ---
 
-## Phase 4: Extended Features
+## Phase 5: Extended Features
 
-**Goal**: Support more use cases
+**Goal**: Support more use cases and platforms
 
-### Potential Features
+### Features
 
-- [ ] Pool settings (lock time, visibility)
+- [ ] Pool settings (scheduled lock time, visibility)
 - [ ] Shareable results image
-- [ ] Real-time updates via Server-Sent Events (SSE) - replace polling
+- [ ] Real-time updates via Server-Sent Events (SSE)
 - [ ] Dark mode support
-- [ ] Projected picks
-- [ ] Pick history / audit trail (see when picks were made/changed, locked after pool lock)
+- [ ] Pick history / audit trail
 - [ ] Pool history (view past pools)
 - [ ] Pool templates (reuse props)
 - [ ] Multi-game pools (playoffs, tournaments)
 - [ ] Push notifications
 - [ ] PWA support (installable)
-- [ ] Create account
-- [ ] View other people's pools
+- [ ] User accounts (optional, for pool history across devices)
 
 ### Technical
 
 - [ ] Offline pick queuing (submit when back online)
 - [ ] Uptime monitoring (Checkly or similar)
+- [ ] Pagination for leaderboard, players, and props lists
+- [ ] Cookie expiry warning (notify before 30-day window lapses)
+- [ ] Name reservation / verification for participants
 
 **Exit Criteria**: Flexible enough for different event types
 
@@ -285,5 +298,11 @@ Track key decisions as we make them:
 | Feb 2, 2026 | Draft status for pools                  | Captain preps pool before opening to participants                      |
 | Feb 2, 2026 | Shared API helpers (`getPoolWithAuth`)  | Reduce duplication, consistent auth/error handling                     |
 | Feb 2, 2026 | localStorage for metadata only          | Secrets stay in httpOnly cookies; localStorage for name/isCaptain flag |
-| Feb 2, 2026 | Defer React Query to Phase 3            | Manual fetch sufficient for MVP; avoid complexity                      |
-| Feb 2, 2026 | Simple spinners over skeletons          | Faster to implement; skeletons deferred to Phase 3                     |
+| Feb 2, 2026 | Defer React Query to Phase 4            | Manual fetch sufficient for MVP; avoid complexity                      |
+| Feb 2, 2026 | Simple spinners over skeletons          | Faster to implement; skeletons deferred to Phase 4                     |
+| Feb 5, 2026 | Recovery tokens for fallback auth       | Users without cookie support can still authenticate                    |
+| Feb 8, 2026 | Pick popularity stats in Phase 2        | Adds value with low effort; useful for engagement                      |
+| Feb 8, 2026 | Player picks view in Phase 2            | Natural extension of leaderboard; players want to compare picks        |
+| Feb 14, 2026 | 3-tab captain interface (Admin/Picks/Players) | Players tab gives captain quick access to participant management  |
+| Feb 14, 2026 | Interface design refresh                | Refined shadows, typography, leaderboard styling for polish            |
+| Feb 14, 2026 | Document blind spots in roadmap         | 14 gaps identified during doc review; prioritized across Phase 3-5     |

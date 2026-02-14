@@ -453,13 +453,13 @@ describe('CaptainTabsClient', () => {
   // ===================
   describe('My Picks Tab', () => {
     describe('status alerts', () => {
-      it('shows locked alert when pool status is locked', async () => {
+      it('does not show locked alert when pool status is locked (picks still allowed)', async () => {
         const user = userEvent.setup();
         render(<CaptainTabsClient {...createPropsWithStatus('locked', { propsList: [createMockProp()] })} />);
 
         await user.click(screen.getByRole('tab', { name: 'My Picks' }));
 
-        expect(screen.getByText(/this pool is locked/i)).toBeInTheDocument();
+        expect(screen.queryByText(/this pool is locked/i)).not.toBeInTheDocument();
       });
 
       it('shows completed alert when pool status is completed', async () => {
@@ -516,11 +516,11 @@ describe('CaptainTabsClient', () => {
     });
 
     describe('handlePick', () => {
-      it('does nothing when pool is not open', async () => {
+      it('does nothing when pool is completed', async () => {
         const user = userEvent.setup();
         render(
           <CaptainTabsClient
-            {...createPropsWithStatus('locked', {
+            {...createPropsWithStatus('completed', {
               propsList: [createMockProp()],
             })}
           />
@@ -650,11 +650,11 @@ describe('CaptainTabsClient', () => {
         expect(screen.getByText('Wrong')).toBeInTheDocument();
       });
 
-      it('disables pick buttons when pool is not open', async () => {
+      it('disables pick buttons when pool is completed', async () => {
         const user = userEvent.setup();
         render(
           <CaptainTabsClient
-            {...createPropsWithStatus('locked', {
+            {...createPropsWithStatus('completed', {
               propsList: [createMockProp()],
             })}
           />
@@ -684,11 +684,11 @@ describe('CaptainTabsClient', () => {
         expect(screen.getByText(/1 of 2 answered/i)).toBeInTheDocument();
       });
 
-      it('hides progress when pool is not open', async () => {
+      it('hides progress when pool is completed', async () => {
         const user = userEvent.setup();
         render(
           <CaptainTabsClient
-            {...createPropsWithStatus('locked', {
+            {...createPropsWithStatus('completed', {
               propsList: [createMockProp()],
             })}
           />

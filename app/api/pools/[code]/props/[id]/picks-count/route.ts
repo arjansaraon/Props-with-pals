@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { picks, props, pools } from '@/src/lib/schema';
 import { eq, and, count } from 'drizzle-orm';
-import { requireValidOrigin } from '@/src/lib/auth';
 import { getPoolWithAuth } from '@/src/lib/api-helpers';
 
 /**
@@ -13,10 +12,6 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string; id: string }> }
 ): Promise<Response> {
-  // CSRF protection
-  const csrfError = requireValidOrigin(request);
-  if (csrfError) return csrfError;
-
   const { db } = await import('@/src/lib/db');
   const { code, id: propId } = await params;
 

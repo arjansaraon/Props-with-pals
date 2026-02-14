@@ -39,7 +39,7 @@ export async function setupTestDb() {
   await db.run(sql`
     CREATE TABLE IF NOT EXISTS props (
       id TEXT PRIMARY KEY,
-      pool_id TEXT NOT NULL REFERENCES pools(id),
+      pool_id TEXT NOT NULL REFERENCES pools(id) ON DELETE CASCADE,
       question_text TEXT NOT NULL,
       options TEXT NOT NULL,
       point_value INTEGER NOT NULL,
@@ -55,7 +55,7 @@ export async function setupTestDb() {
   await db.run(sql`
     CREATE TABLE IF NOT EXISTS players (
       id TEXT PRIMARY KEY,
-      pool_id TEXT NOT NULL REFERENCES pools(id),
+      pool_id TEXT NOT NULL REFERENCES pools(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       secret TEXT NOT NULL,
       total_points INTEGER NOT NULL DEFAULT 0,
@@ -69,8 +69,8 @@ export async function setupTestDb() {
   await db.run(sql`
     CREATE TABLE IF NOT EXISTS picks (
       id TEXT PRIMARY KEY,
-      player_id TEXT NOT NULL REFERENCES players(id),
-      prop_id TEXT NOT NULL REFERENCES props(id),
+      player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+      prop_id TEXT NOT NULL REFERENCES props(id) ON DELETE CASCADE,
       selected_option_index INTEGER NOT NULL,
       points_earned INTEGER,
       created_at TEXT NOT NULL,
@@ -82,8 +82,8 @@ export async function setupTestDb() {
     CREATE TABLE IF NOT EXISTS recovery_tokens (
       id TEXT PRIMARY KEY,
       token TEXT NOT NULL UNIQUE,
-      player_id TEXT NOT NULL REFERENCES players(id),
-      pool_id TEXT NOT NULL REFERENCES pools(id),
+      player_id TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+      pool_id TEXT NOT NULL REFERENCES pools(id) ON DELETE CASCADE,
       expires_at TEXT NOT NULL,
       used_at TEXT,
       created_at TEXT NOT NULL

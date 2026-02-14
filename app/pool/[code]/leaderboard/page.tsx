@@ -298,17 +298,12 @@ export default async function Leaderboard({
           />
         )}
 
-        {/* Helper text for open pools */}
-        {pool.status === 'open' && leaderboard.length > 0 && (
-          <p className="text-sm text-muted-foreground text-center mt-4">
-            View other players&apos; picks after the pool locks
-          </p>
-        )}
-
-        {/* Helper text for unresolved props */}
-        {!hasResolvedProps && leaderboard.length > 0 && (
-          <p className="text-sm text-muted-foreground text-center mt-4">
-            Scores will appear once answers are revealed
+        {/* Helper text */}
+        {leaderboard.length > 0 && (pool.status === 'open' || !hasResolvedProps) && (
+          <p className="text-xs text-muted-foreground text-center mt-3">
+            {pool.status === 'open'
+              ? 'View other players\' picks after the pool locks'
+              : 'Scores will appear once answers are revealed'}
           </p>
         )}
 

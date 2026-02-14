@@ -6,7 +6,7 @@
 
 **Spec-Driven Development:**
 
-1. Write feature specs in `features/Phase 2/` before implementation
+1. Write feature specs in `docs/` or as inline test descriptions before implementation
 2. Specs define expected behavior, test cases, and implementation details
 3. Write failing tests FIRST, then implement to make them pass
 4. Each spec should include test code examples
@@ -23,11 +23,13 @@
 
 ## Project Context
 
-- Next.js 14 App Router with TypeScript
+- Next.js 16 App Router with TypeScript
 - Drizzle ORM with Turso (SQLite)
 - TDD approach - write tests first
-- Vitest for testing
-- Feature specs in `features/Phase 2/`
+- Vitest for testing (321 tests)
+- React 19 with shadcn/ui component library
+- Tailwind CSS v4
+- httpOnly cookie auth with CSRF protection
 
 ## Styling
 
@@ -35,7 +37,7 @@ This project uses **Tailwind v4 with shadcn/ui**. Theme changes require updating
 
 ## Authentication & Debugging
 
-When debugging authentication issues, check pool/resource status first before assuming auth mechanism problems. This codebase supports both cookie auth and query param fallback for testing.
+When debugging authentication issues, check pool/resource status first before assuming auth mechanism problems. Auth uses httpOnly cookies as the primary mechanism, with recovery tokens as fallback.
 
 ## Environment Setup
 

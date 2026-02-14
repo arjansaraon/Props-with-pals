@@ -311,13 +311,9 @@ export function CaptainClient({
       )}
 
       {propsList.length === 0 && poolStatus === 'open' && (
-        <Card className="shadow-sm">
-          <CardContent className="py-6">
-            <p className="text-muted-foreground text-center">
-              No props yet. Add your first prop above!
-            </p>
-          </CardContent>
-        </Card>
+        <p className="text-sm text-muted-foreground text-center">
+          No props yet. Add your first prop above.
+        </p>
       )}
     </>
   );

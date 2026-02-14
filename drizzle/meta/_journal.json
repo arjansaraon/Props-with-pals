@@ -15,6 +15,13 @@
       "when": 1771083043937,
       "tag": "0001_overjoyed_warhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771084014011,
+      "tag": "0002_yellow_lyja",
+      "breakpoints": true
     }
   ]
 }

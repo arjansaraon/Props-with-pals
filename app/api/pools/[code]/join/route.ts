@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { pools, players } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
 import { JoinPoolSchema } from '@/src/lib/validators';
-import { jsonResponseWithAuth, requireValidOrigin } from '@/src/lib/auth';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import type * as schema from '@/src/lib/schema';
+import { jsonResponseWithAuth } from '@/src/lib/auth';
+import type { Database } from '@/src/lib/api-helpers';
 
-export type Database = LibSQLDatabase<typeof schema>;
+export type { Database };
 
 /**
  * Joins a pool as a new participant.
@@ -118,10 +117,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ): Promise<Response> {
-  // CSRF protection
-  const csrfError = requireValidOrigin(request);
-  if (csrfError) return csrfError;
-
   const { db } = await import('@/src/lib/db');
   const { code } = await params;
   return joinPoolHandler(request, code, db);

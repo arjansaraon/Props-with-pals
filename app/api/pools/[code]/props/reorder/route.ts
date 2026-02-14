@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pools, props } from '@/src/lib/schema';
+import { props } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
-import { getSecret, requireValidOrigin, safeCompareSecrets } from '@/src/lib/auth';
-import type { LibSQLDatabase } from 'drizzle-orm/libsql';
-import type * as schema from '@/src/lib/schema';
 import { z } from 'zod';
+import { getPoolWithAuth } from '@/src/lib/api-helpers';
+import type { Database } from '@/src/lib/api-helpers';
 
-export type Database = LibSQLDatabase<typeof schema>;
+export type { Database };
 
 const ReorderSchema = z.object({
   propIds: z.array(z.string().uuid()).min(1),
@@ -22,36 +21,9 @@ export async function reorderPropsHandler(
   database: Database
 ): Promise<Response> {
   try {
-    const secret = await getSecret(code, request);
-
-    if (!secret) {
-      return NextResponse.json(
-        { code: 'UNAUTHORIZED', message: 'Missing secret' },
-        { status: 401 }
-      );
-    }
-
-    const poolResult = await database
-      .select()
-      .from(pools)
-      .where(eq(pools.inviteCode, code))
-      .limit(1);
-
-    if (poolResult.length === 0) {
-      return NextResponse.json(
-        { code: 'POOL_NOT_FOUND', message: 'Pool not found' },
-        { status: 404 }
-      );
-    }
-
-    const pool = poolResult[0];
-
-    if (!safeCompareSecrets(pool.captainSecret, secret)) {
-      return NextResponse.json(
-        { code: 'UNAUTHORIZED', message: 'Invalid secret' },
-        { status: 401 }
-      );
-    }
+    const authResult = await getPoolWithAuth(code, request, database, { requireCaptain: true });
+    if (!authResult.success) return authResult.response;
+    const { pool } = authResult;
 
     if (pool.status !== 'open') {
       return NextResponse.json(
@@ -101,9 +73,6 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ): Promise<Response> {
-  const csrfError = requireValidOrigin(request);
-  if (csrfError) return csrfError;
-
   const { db } = await import('@/src/lib/db');
   const { code } = await params;
   return reorderPropsHandler(request, code, db);

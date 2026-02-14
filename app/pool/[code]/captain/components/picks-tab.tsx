@@ -9,7 +9,7 @@ import type { Prop, SubmittingState } from '../types';
 interface PicksReturn {
   myPicks: Map<string, number>;
   submitting: SubmittingState | null;
-  pickErrorPropId: string | null;
+  pickError: { propId: string; message: string } | null;
   pickedCount: number;
   allPicked: boolean;
   progressPercent: number;
@@ -38,7 +38,7 @@ export function PicksTab({ code, poolStatus, propsList, picks }: PicksTabProps) 
       propsList={propsList}
       myPicks={picks.myPicks}
       submitting={picks.submitting}
-      pickErrorPropId={picks.pickErrorPropId}
+      pickError={picks.pickError}
       pickedCount={picks.pickedCount}
       allPicked={picks.allPicked}
       progressPercent={picks.progressPercent}

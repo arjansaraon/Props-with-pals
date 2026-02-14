@@ -42,7 +42,7 @@ export function PicksClient({
       propsList={propsList}
       myPicks={picks.myPicks}
       submitting={picks.submitting}
-      pickErrorPropId={picks.pickErrorPropId}
+      pickError={picks.pickError}
       pickedCount={picks.pickedCount}
       allPicked={picks.allPicked}
       progressPercent={picks.progressPercent}

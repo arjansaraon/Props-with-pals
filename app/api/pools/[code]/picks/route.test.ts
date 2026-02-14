@@ -212,7 +212,7 @@ describe('POST /api/pools/[code]/picks', () => {
   });
 
   describe('Pool Status Checks', () => {
-    it('rejects if pool is locked (403)', async () => {
+    it('allows picks when pool is locked', async () => {
       const { propId, participantSecret } = await createTestPoolWithPropAndPlayer({
         inviteCode: 'PICK07',
         status: 'locked',
@@ -227,9 +227,7 @@ describe('POST /api/pools/[code]/picks', () => {
         db
       );
 
-      expect(response.status).toBe(403);
-      const data = await response.json();
-      expect(data.code).toBe('POOL_LOCKED');
+      expect(response.status).toBe(201);
     });
 
     it('rejects if pool is completed (403)', async () => {
@@ -249,7 +247,7 @@ describe('POST /api/pools/[code]/picks', () => {
 
       expect(response.status).toBe(403);
       const data = await response.json();
-      expect(data.code).toBe('POOL_LOCKED');
+      expect(data.code).toBe('POOL_COMPLETED');
     });
   });
 
