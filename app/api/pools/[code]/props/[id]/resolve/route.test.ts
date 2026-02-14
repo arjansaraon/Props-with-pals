@@ -3,14 +3,18 @@ import { setupTestDb } from '@/src/lib/test-db';
 import { pools, players, props, picks } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
 import { resolvePropHandler, type Database } from './route';
+import { createCookieHeader } from '@/src/lib/test-helpers';
 
 // Helper to create a mock POST Request
 function createRequest(code: string, propId: string, secret: string, body: unknown) {
   return new Request(
-    `http://localhost:3000/api/pools/${code}/props/${propId}/resolve?secret=${secret}`,
+    `http://localhost:3000/api/pools/${code}/props/${propId}/resolve`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': createCookieHeader(code, secret),
+      },
       body: JSON.stringify(body),
     }
   );

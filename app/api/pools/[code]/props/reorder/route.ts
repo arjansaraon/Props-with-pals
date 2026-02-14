@@ -85,7 +85,7 @@ export async function reorderPropsHandler(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error('Error reordering props:', error);
+    console.error('Error reordering props:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to reorder props' },
       { status: 500 }

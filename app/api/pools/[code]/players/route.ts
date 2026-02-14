@@ -3,6 +3,7 @@ import * as schema from '@/src/lib/schema';
 import { players, pools } from '@/src/lib/schema';
 import { eq } from 'drizzle-orm';
 import { getSecret, safeCompareSecrets } from '@/src/lib/auth';
+import { getOrCreateTokensForPool } from '@/src/lib/recovery-tokens';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 
 // Export Database type for testing
@@ -57,17 +58,20 @@ export async function getPlayersHandler(
       .where(eq(players.poolId, pool.id))
       .orderBy(players.name);
 
-    // Build recovery URLs so captain can share player-specific links
+    // Build recovery URLs with opaque tokens (secrets never leave the server)
     const requestUrl = new URL(request.url);
     const origin = `${requestUrl.protocol}//${requestUrl.host}`;
 
-    // Mark the captain in the list and include recovery URLs
-    // Raw secrets are not exposed directly - they're embedded in recovery URLs
+    // Generate or reuse recovery tokens for all players
+    const playerIds = playersList.map((p) => p.id);
+    const tokenMap = await getOrCreateTokensForPool(database, pool.id, playerIds);
+
     const playersWithRole = playersList.map(({ secret, ...p }) => {
       const isCaptain = safeCompareSecrets(secret, pool.captainSecret);
+      const tokenStr = tokenMap.get(p.id)!;
       const recoveryPath = isCaptain
-        ? `/pool/${code}/captain?secret=${secret}`
-        : `/pool/${code}/picks?secret=${secret}`;
+        ? `/pool/${code}/captain?token=${tokenStr}`
+        : `/pool/${code}/picks?token=${tokenStr}`;
       return {
         ...p,
         isCaptain,
@@ -77,7 +81,7 @@ export async function getPlayersHandler(
 
     return NextResponse.json({ players: playersWithRole }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching participants:', error);
+    console.error('Error fetching participants:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to fetch participants' },
       { status: 500 }

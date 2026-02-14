@@ -122,7 +122,7 @@ export async function createPoolHandler(
       201
     );
   } catch (error) {
-    console.error('Error creating pool:', error);
+    console.error('Error creating pool:', error instanceof Error ? error.message : 'Unknown error');
 
     // Handle invite code collision (unique constraint violation)
     // This can happen with auto-generated codes or race conditions with custom codes

@@ -116,7 +116,7 @@ export async function createPropHandler(
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating prop:', error);
+    console.error('Error creating prop:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to create prop' },
       { status: 500 }

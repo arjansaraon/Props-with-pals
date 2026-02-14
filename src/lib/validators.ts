@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+/** Strips HTML tags to prevent stored XSS */
+const stripHtml = (val: string) => val.replace(/<[^>]*>/g, '');
+
 /**
  * Reserved invite codes that cannot be used (route conflicts, security)
  */
@@ -42,18 +45,22 @@ export const CreatePoolSchema = z.object({
   name: z
     .string()
     .min(1, 'Pool name is required')
-    .max(100, 'Pool name must be 100 characters or less'),
+    .max(100, 'Pool name must be 100 characters or less')
+    .transform(stripHtml),
   captainName: z
     .string()
     .min(1, 'Captain name is required')
-    .max(50, 'Captain name must be 50 characters or less'),
+    .max(50, 'Captain name must be 50 characters or less')
+    .transform(stripHtml),
   buyInAmount: z
     .string()
     .max(20, 'Buy-in amount must be 20 characters or less')
+    .transform(stripHtml)
     .optional(),
   description: z
     .string()
     .max(500, 'Description must be 500 characters or less')
+    .transform(stripHtml)
     .optional(),
   inviteCode: InviteCodeSchema.optional(),
 });
@@ -68,10 +75,12 @@ export const UpdatePoolSchema = z.object({
     .string()
     .min(1, 'Pool name is required')
     .max(100, 'Pool name must be 100 characters or less')
+    .transform(stripHtml)
     .optional(),
   description: z
     .string()
     .max(500, 'Description must be 500 characters or less')
+    .transform(stripHtml)
     .nullable()
     .optional(),
   status: z.enum(['open', 'locked', 'completed']).optional(),
@@ -86,16 +95,21 @@ export const CreatePropSchema = z.object({
   questionText: z
     .string()
     .min(1, 'Question is required')
-    .max(500, 'Question must be 500 characters or less'),
+    .max(500, 'Question must be 500 characters or less')
+    .transform(stripHtml),
   options: z
-    .array(z.string().min(1, 'Option cannot be empty'))
+    .array(z.string().min(1, 'Option cannot be empty').transform(stripHtml))
     .min(2, 'At least 2 options are required')
-    .max(10, 'Maximum 10 options allowed'),
+    .max(10, 'Maximum 10 options allowed')
+    .refine(
+      (opts) => new Set(opts.map((o) => o.trim().toLowerCase())).size === opts.length,
+      'Options must be unique'
+    ),
   pointValue: z
     .number()
     .int('Point value must be a whole number')
     .positive('Point value must be positive'),
-  category: z.string().max(50).optional(),
+  category: z.string().max(50).transform(stripHtml).optional(),
 });
 
 export type CreatePropInput = z.infer<typeof CreatePropSchema>;
@@ -111,18 +125,23 @@ export const UpdatePropSchema = z.object({
     .trim()
     .min(1, 'Question is required')
     .max(500, 'Question must be 500 characters or less')
+    .transform(stripHtml)
     .optional(),
   options: z
-    .array(z.string().min(1, 'Option cannot be empty'))
+    .array(z.string().min(1, 'Option cannot be empty').transform(stripHtml))
     .min(2, 'At least 2 options are required')
     .max(10, 'Maximum 10 options allowed')
+    .refine(
+      (opts) => new Set(opts.map((o) => o.trim().toLowerCase())).size === opts.length,
+      'Options must be unique'
+    )
     .optional(),
   pointValue: z
     .number()
     .int('Point value must be a whole number')
     .positive('Point value must be positive')
     .optional(),
-  category: z.string().max(50).nullable().optional(),
+  category: z.string().max(50).transform(stripHtml).nullable().optional(),
 });
 
 export type UpdatePropInput = z.infer<typeof UpdatePropSchema>;
@@ -134,7 +153,8 @@ export const JoinPoolSchema = z.object({
   name: z
     .string()
     .min(1, 'Name is required')
-    .max(50, 'Name must be 50 characters or less'),
+    .max(50, 'Name must be 50 characters or less')
+    .transform(stripHtml),
 });
 
 export type JoinPoolInput = z.infer<typeof JoinPoolSchema>;

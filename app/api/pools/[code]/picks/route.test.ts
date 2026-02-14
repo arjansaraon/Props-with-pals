@@ -3,12 +3,16 @@ import { setupTestDb } from '@/src/lib/test-db';
 import { pools, players, props, picks } from '@/src/lib/schema';
 import { eq, and } from 'drizzle-orm';
 import { submitPickHandler, type Database } from './route';
+import { createCookieHeader } from '@/src/lib/test-helpers';
 
 // Helper to create a mock POST Request
 function createRequest(code: string, secret: string, body: unknown) {
-  return new Request(`http://localhost:3000/api/pools/${code}/picks?secret=${secret}`, {
+  return new Request(`http://localhost:3000/api/pools/${code}/picks`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': createCookieHeader(code, secret),
+    },
     body: JSON.stringify(body),
   });
 }
@@ -322,6 +326,31 @@ describe('POST /api/pools/[code]/picks', () => {
       expect(response.status).toBe(404);
       const data = await response.json();
       expect(data.code).toBe('POOL_NOT_FOUND');
+    });
+
+    it('rejects query param secret with no cookie (401)', async () => {
+      const { propId, participantSecret } = await createTestPoolWithPropAndPlayer({
+        inviteCode: 'PICK12',
+      });
+
+      // Send secret only in the URL query param, no Cookie header
+      const request = new Request(
+        `http://localhost:3000/api/pools/PICK12/picks?secret=${participantSecret}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            propId,
+            selectedOptionIndex: 0,
+          }),
+        }
+      );
+
+      const response = await submitPickHandler(request, 'PICK12', db);
+
+      expect(response.status).toBe(401);
+      const data = await response.json();
+      expect(data.code).toBe('UNAUTHORIZED');
     });
   });
 });

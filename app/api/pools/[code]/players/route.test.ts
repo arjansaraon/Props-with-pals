@@ -3,14 +3,14 @@ import { setupTestDb } from '@/src/lib/test-db';
 import { pools, players } from '@/src/lib/schema';
 import { getPlayersHandler, type Database } from './route';
 import { NextRequest } from 'next/server';
+import { createCookieHeader } from '@/src/lib/test-helpers';
 
 // Helper to create a mock GET Request
 function createGetRequest(code: string, secret?: string) {
-  const url = secret
-    ? `http://localhost:3000/api/pools/${code}/players?secret=${secret}`
-    : `http://localhost:3000/api/pools/${code}/players`;
+  const url = `http://localhost:3000/api/pools/${code}/players`;
   return new NextRequest(url, {
     method: 'GET',
+    ...(secret ? { headers: { 'Cookie': createCookieHeader(code, secret) } } : {}),
   });
 }
 
@@ -151,7 +151,7 @@ describe('GET /api/pools/[code]/players', () => {
 
       const data = await response.json();
       const captain = data.players.find((p: { isCaptain: boolean }) => p.isCaptain);
-      expect(captain.recoveryUrl).toContain('/pool/PART04B/captain?secret=');
+      expect(captain.recoveryUrl).toContain('/pool/PART04B/captain?token=');
     });
 
     it('returns player recovery URL pointing to picks page', async () => {
@@ -166,7 +166,7 @@ describe('GET /api/pools/[code]/players', () => {
 
       const data = await response.json();
       const alice = data.players.find((p: { name: string }) => p.name === 'Alice');
-      expect(alice.recoveryUrl).toContain('/pool/PART04C/picks?secret=');
+      expect(alice.recoveryUrl).toContain('/pool/PART04C/picks?token=');
     });
 
     it('returns participants sorted by name', async () => {

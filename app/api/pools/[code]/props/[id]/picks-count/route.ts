@@ -53,7 +53,7 @@ export async function GET(
 
     return NextResponse.json({ count: pickCountResult[0].count }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching picks count:', error);
+    console.error('Error fetching picks count:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to fetch picks count' },
       { status: 500 }

@@ -94,7 +94,7 @@ export async function updatePropHandler(
 
     return NextResponse.json(updatedProp[0], { status: 200 });
   } catch (error) {
-    console.error('Error updating prop:', error);
+    console.error('Error updating prop:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to update prop' },
       { status: 500 }
@@ -148,7 +148,7 @@ export async function deletePropHandler(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error('Error deleting prop:', error);
+    console.error('Error deleting prop:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to delete prop' },
       { status: 500 }

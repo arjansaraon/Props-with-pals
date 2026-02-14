@@ -102,7 +102,7 @@ export async function joinPoolHandler(
       );
     }
 
-    console.error('Error joining pool:', error);
+    console.error('Error joining pool:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to join pool' },
       { status: 500 }

@@ -29,7 +29,7 @@ export async function getPoolHandler(
 
     return NextResponse.json(toPublicPool(result.pool), { status: 200 });
   } catch (error) {
-    console.error('Error getting pool:', error);
+    console.error('Error getting pool:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to get pool' },
       { status: 500 }
@@ -157,7 +157,7 @@ export async function updatePoolHandler(
       { status: 400 }
     );
   } catch (error) {
-    console.error('Error updating pool:', error);
+    console.error('Error updating pool:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to update pool' },
       { status: 500 }

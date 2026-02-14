@@ -3,22 +3,25 @@ import { setupTestDb } from '@/src/lib/test-db';
 import { pools, players } from '@/src/lib/schema';
 import { getPoolHandler, updatePoolHandler, type Database } from './route';
 import { NextRequest } from 'next/server';
+import { createCookieHeader } from '@/src/lib/test-helpers';
 
 // Helper to create a mock GET Request
 function createGetRequest(code: string, secret?: string) {
-  const url = secret
-    ? `http://localhost:3000/api/pools/${code}?secret=${secret}`
-    : `http://localhost:3000/api/pools/${code}`;
+  const url = `http://localhost:3000/api/pools/${code}`;
   return new NextRequest(url, {
     method: 'GET',
+    ...(secret ? { headers: { 'Cookie': createCookieHeader(code, secret) } } : {}),
   });
 }
 
 // Helper to create a mock PATCH Request for updating pool status
 function createPatchRequest(code: string, secret: string, targetStatus = 'locked') {
-  return new NextRequest(`http://localhost:3000/api/pools/${code}?secret=${secret}`, {
+  return new NextRequest(`http://localhost:3000/api/pools/${code}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': createCookieHeader(code, secret),
+    },
     body: JSON.stringify({ status: targetStatus }),
   });
 }
@@ -311,9 +314,12 @@ describe('PATCH /api/pools/[code] (Edit Pool Details)', () => {
 
   // Helper to create PATCH request for editing details
   function createEditRequest(code: string, secret: string, body: Record<string, unknown>) {
-    return new NextRequest(`http://localhost:3000/api/pools/${code}?secret=${secret}`, {
+    return new NextRequest(`http://localhost:3000/api/pools/${code}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': createCookieHeader(code, secret),
+      },
       body: JSON.stringify(body),
     });
   }
@@ -521,9 +527,12 @@ describe('PATCH /api/pools/[code] (Complete Pool)', () => {
 
   // Helper to create PATCH request for completing pool
   function createCompleteRequest(code: string, secret: string) {
-    return new NextRequest(`http://localhost:3000/api/pools/${code}?secret=${secret}`, {
+    return new NextRequest(`http://localhost:3000/api/pools/${code}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': createCookieHeader(code, secret),
+      },
       body: JSON.stringify({ status: 'completed' }),
     });
   }

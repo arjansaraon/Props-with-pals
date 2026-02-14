@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 
 const COOKIE_NAME = 'pwp_auth';
-const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
+const COOKIE_MAX_AGE = parseInt(process.env.PWP_COOKIE_MAX_AGE || '2592000', 10); // default 30 days
 const MAX_POOLS_PER_COOKIE = 50; // Prevent cookie from exceeding ~4KB browser limit
 
 interface AuthCookieData {
@@ -58,22 +58,26 @@ export async function getPoolSecret(code: string): Promise<string | null> {
 }
 
 /**
- * Gets the secret from cookies, with query param fallback for testing.
- * In production, cookies are the only auth mechanism.
- * Query params are only used in development/test environments.
+ * Gets the secret from cookies only. No query param fallback.
+ * When cookies() is unavailable (e.g., in tests), falls back to
+ * parsing the Cookie header directly from the request.
  */
 export async function getSecret(code: string, request: Request): Promise<string | null> {
-  // Try cookies first (preferred and required in production)
+  // Try Next.js cookies() first (works in actual request context)
   const cookieSecret = await getPoolSecret(code);
   if (cookieSecret) {
     return cookieSecret;
   }
 
-  // Fallback to query params ONLY in development/test (never in production)
-  // Query params in URLs can leak via logs, referrer headers, and browser history
-  if (process.env.NODE_ENV !== 'production') {
-    const url = new URL(request.url);
-    return url.searchParams.get('secret');
+  // Fallback: parse Cookie header directly from request
+  // Needed when cookies() is not available (e.g., in tests)
+  const cookieHeader = request.headers.get('cookie');
+  if (cookieHeader) {
+    const match = cookieHeader.match(/pwp_auth=([^;]+)/);
+    if (match) {
+      const data = parseAuthCookie(match[1]);
+      return data.pools[code] ?? null;
+    }
   }
 
   return null;

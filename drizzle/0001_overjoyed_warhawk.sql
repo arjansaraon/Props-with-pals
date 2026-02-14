@@ -1,0 +1,1 @@
+CREATE INDEX `idx_recovery_tokens_expires` ON `recovery_tokens` (`expires_at`);

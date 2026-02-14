@@ -86,6 +86,24 @@ export const picks = sqliteTable('picks', {
 ]);
 
 // ============================================
+// RECOVERY TOKENS TABLE
+// ============================================
+export const recoveryTokens = sqliteTable('recovery_tokens', {
+  id: text('id').primaryKey(),
+  token: text('token').notNull().unique(),
+  playerId: text('player_id').notNull().references(() => players.id),
+  poolId: text('pool_id').notNull().references(() => pools.id),
+  expiresAt: text('expires_at').notNull(),
+  usedAt: text('used_at'),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+}, (table) => [
+  index('idx_recovery_tokens_token').on(table.token),
+  index('idx_recovery_tokens_pool').on(table.poolId),
+  index('idx_recovery_tokens_player').on(table.playerId),
+  index('idx_recovery_tokens_expires').on(table.expiresAt),
+]);
+
+// ============================================
 // RELATIONS
 // ============================================
 export const poolsRelations = relations(pools, ({ many }) => ({
@@ -120,6 +138,17 @@ export const picksRelations = relations(picks, ({ one }) => ({
   }),
 }));
 
+export const recoveryTokensRelations = relations(recoveryTokens, ({ one }) => ({
+  player: one(players, {
+    fields: [recoveryTokens.playerId],
+    references: [players.id],
+  }),
+  pool: one(pools, {
+    fields: [recoveryTokens.poolId],
+    references: [pools.id],
+  }),
+}));
+
 // ============================================
 // TYPE EXPORTS
 // ============================================
@@ -134,3 +163,6 @@ export type NewPlayer = typeof players.$inferInsert;
 
 export type Pick = typeof picks.$inferSelect;
 export type NewPick = typeof picks.$inferInsert;
+
+export type RecoveryToken = typeof recoveryTokens.$inferSelect;
+export type NewRecoveryToken = typeof recoveryTokens.$inferInsert;

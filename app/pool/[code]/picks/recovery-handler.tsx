@@ -4,26 +4,26 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Spinner } from '@/app/components/spinner';
 
-export function RecoveryHandler({ code }: { code: string }) {
+export function RecoveryHandler({ code, redirectPath }: { code: string; redirectPath?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const secret = searchParams.get('secret');
+  const token = searchParams.get('token');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!secret) return;
+    if (!token) return;
 
     async function recover() {
       try {
         const res = await fetch(`/api/pools/${code}/recover`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ secret }),
+          body: JSON.stringify({ token }),
         });
 
         if (res.ok) {
           // Cookie is now set — redirect to clean URL
-          router.replace(`/pool/${code}/picks`);
+          router.replace(redirectPath || `/pool/${code}/picks`);
           router.refresh();
         } else {
           setError('Invalid recovery link. Please ask the captain for a new link.');
@@ -34,7 +34,7 @@ export function RecoveryHandler({ code }: { code: string }) {
     }
 
     recover();
-  }, [secret, code, router]);
+  }, [token, code, router, redirectPath]);
 
   if (error) {
     return (

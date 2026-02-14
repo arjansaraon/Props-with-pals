@@ -78,6 +78,18 @@ export async function setupTestDb() {
     )
   `);
 
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS recovery_tokens (
+      id TEXT PRIMARY KEY,
+      token TEXT NOT NULL UNIQUE,
+      player_id TEXT NOT NULL REFERENCES players(id),
+      pool_id TEXT NOT NULL REFERENCES pools(id),
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      created_at TEXT NOT NULL
+    )
+  `);
+
   // Create indexes
   await db.run(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_players_pool_name ON players(pool_id, name)`);
   await db.run(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_picks_participant_prop ON picks(player_id, prop_id)`);
@@ -86,6 +98,10 @@ export async function setupTestDb() {
   await db.run(sql`CREATE INDEX IF NOT EXISTS idx_players_pool_secret ON players(pool_id, secret)`);
   await db.run(sql`CREATE INDEX IF NOT EXISTS idx_picks_participant ON picks(player_id)`);
   await db.run(sql`CREATE INDEX IF NOT EXISTS idx_picks_prop ON picks(prop_id)`);
+  await db.run(sql`CREATE INDEX IF NOT EXISTS idx_recovery_tokens_token ON recovery_tokens(token)`);
+  await db.run(sql`CREATE INDEX IF NOT EXISTS idx_recovery_tokens_pool ON recovery_tokens(pool_id)`);
+  await db.run(sql`CREATE INDEX IF NOT EXISTS idx_recovery_tokens_player ON recovery_tokens(player_id)`);
+  await db.run(sql`CREATE INDEX IF NOT EXISTS idx_recovery_tokens_expires ON recovery_tokens(expires_at)`);
 
   // Cleanup function to delete the temp file
   const cleanup = () => {

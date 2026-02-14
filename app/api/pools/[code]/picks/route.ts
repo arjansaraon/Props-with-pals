@@ -178,7 +178,7 @@ export async function submitPickHandler(
       );
     }
   } catch (error) {
-    console.error('Error submitting pick:', error);
+    console.error('Error submitting pick:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to submit pick' },
       { status: 500 }

@@ -76,7 +76,7 @@ export async function getLeaderboardHandler(
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error getting leaderboard:', error);
+    console.error('Error getting leaderboard:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to get leaderboard' },
       { status: 500 }

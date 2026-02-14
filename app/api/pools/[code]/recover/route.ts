@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as schema from '@/src/lib/schema';
-import { pools, players } from '@/src/lib/schema';
-import { eq, and } from 'drizzle-orm';
+import { pools } from '@/src/lib/schema';
+import { eq } from 'drizzle-orm';
 import { setPoolSecretCookie, requireValidOrigin } from '@/src/lib/auth';
+import { redeemToken } from '@/src/lib/recovery-tokens';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 
 export type Database = LibSQLDatabase<typeof schema>;
 
 /**
- * Recovers a player's session by setting the auth cookie.
- * Used when a player opens a recovery link shared by the captain.
+ * Recovers a player's session using an opaque recovery token.
+ * Validates the token, sets the auth cookie, and marks the token as used.
  * Exported for testing with injected database.
  */
 export async function recoverHandler(
@@ -19,11 +20,11 @@ export async function recoverHandler(
 ): Promise<Response> {
   try {
     const body = await request.json();
-    const { secret } = body;
+    const { token } = body;
 
-    if (!secret || typeof secret !== 'string') {
+    if (!token || typeof token !== 'string') {
       return NextResponse.json(
-        { code: 'MISSING_SECRET', message: 'Secret is required' },
+        { code: 'MISSING_TOKEN', message: 'Recovery token is required' },
         { status: 400 }
       );
     }
@@ -42,26 +43,22 @@ export async function recoverHandler(
       );
     }
 
-    // Verify secret matches a player in this pool
-    const playerResult = await database
-      .select({ id: players.id, name: players.name })
-      .from(players)
-      .where(and(eq(players.poolId, poolResult[0].id), eq(players.secret, secret)))
-      .limit(1);
+    // Redeem the token (validates, marks used, returns player info)
+    const result = await redeemToken(database, token, poolResult[0].id);
 
-    if (playerResult.length === 0) {
+    if (!result) {
       return NextResponse.json(
-        { code: 'INVALID_SECRET', message: 'Invalid recovery link' },
+        { code: 'INVALID_TOKEN', message: 'Invalid or expired recovery link' },
         { status: 401 }
       );
     }
 
-    // Set the auth cookie and return success
+    // Set the auth cookie with the player's actual secret
     const response = NextResponse.json(
-      { success: true, name: playerResult[0].name },
+      { success: true, name: result.playerName },
       { status: 200 }
     );
-    return setPoolSecretCookie(code, secret, response);
+    return setPoolSecretCookie(code, result.playerSecret, response);
   } catch {
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to recover session' },
@@ -72,7 +69,7 @@ export async function recoverHandler(
 
 /**
  * POST /api/pools/[code]/recover
- * Sets the auth cookie for a player using their secret.
+ * Sets the auth cookie for a player using a recovery token.
  */
 export async function POST(
   request: NextRequest,

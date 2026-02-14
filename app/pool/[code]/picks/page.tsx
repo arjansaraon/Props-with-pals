@@ -15,14 +15,14 @@ export default async function PlayerPicks({
   searchParams,
 }: {
   params: Promise<{ code: string }>;
-  searchParams: Promise<{ secret?: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
   const { code } = await params;
-  const { secret: querySecret } = await searchParams;
+  const { token: queryToken } = await searchParams;
 
-  // Get secret from cookie (preferred) or query param (recovery fallback)
+  // Cookie is the only auth mechanism — no query param fallback
   const cookieSecret = await getPoolSecret(code);
-  const secret = cookieSecret || querySecret || null;
+  const secret = cookieSecret || null;
 
   // Get host for building pool link (no secret - auth via cookie)
   const headersList = await headers();
@@ -124,11 +124,11 @@ export default async function PlayerPicks({
           </Alert>
         )}
 
-        {!participant && querySecret && (
+        {!participant && queryToken && (
           <RecoveryHandler code={code} />
         )}
 
-        {!participant && !querySecret && (
+        {!participant && !queryToken && (
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -140,7 +140,7 @@ export default async function PlayerPicks({
 
         {/* Props list */}
         {propsList.length === 0 ? (
-          <Card className="shadow-lg">
+          <Card className="shadow-sm">
             <CardContent className="py-6">
               <p className="text-muted-foreground">
                 No props have been added yet. Check back later!

@@ -3,14 +3,18 @@ import { setupTestDb } from '@/src/lib/test-db';
 import { pools, props } from '@/src/lib/schema';
 import { updatePropHandler, deletePropHandler, type Database } from './route';
 import { NextRequest } from 'next/server';
+import { createCookieHeader } from '@/src/lib/test-helpers';
 
 // Helper to create a mock PATCH Request
 function createPatchRequest(code: string, propId: string, secret: string, body: unknown) {
   return new NextRequest(
-    `http://localhost:3000/api/pools/${code}/props/${propId}?secret=${secret}`,
+    `http://localhost:3000/api/pools/${code}/props/${propId}`,
     {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': createCookieHeader(code, secret),
+      },
       body: JSON.stringify(body),
     }
   );
@@ -19,9 +23,10 @@ function createPatchRequest(code: string, propId: string, secret: string, body: 
 // Helper to create a mock DELETE Request
 function createDeleteRequest(code: string, propId: string, secret: string) {
   return new NextRequest(
-    `http://localhost:3000/api/pools/${code}/props/${propId}?secret=${secret}`,
+    `http://localhost:3000/api/pools/${code}/props/${propId}`,
     {
       method: 'DELETE',
+      headers: { 'Cookie': createCookieHeader(code, secret) },
     }
   );
 }

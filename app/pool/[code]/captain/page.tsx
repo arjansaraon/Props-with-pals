@@ -7,25 +7,25 @@ import { CaptainTabsClient } from './captain-tabs-client';
 import { getPoolSecret, safeCompareSecrets } from '@/src/lib/auth';
 import { Card, CardContent } from '@/app/components/ui/card';
 import { PoolHeader } from '@/app/components/pool-header';
+import { RecoveryHandler } from '../picks/recovery-handler';
 
 export default async function CaptainDashboard({
   params,
   searchParams,
 }: {
   params: Promise<{ code: string }>;
-  searchParams: Promise<{ secret?: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
   const { code } = await params;
-  const { secret: querySecret } = await searchParams;
+  const { token: queryToken } = await searchParams;
 
   // Get host for building captain link
   const headersList = await headers();
   const host = headersList.get('host') || 'localhost:3000';
   const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
 
-  // Get secret from cookie (preferred) or query param (fallback for migration)
+  // Cookie is the only auth mechanism
   const cookieSecret = await getPoolSecret(code);
-  const secret = cookieSecret || querySecret;
 
   // Fetch pool
   const poolResult = await db
@@ -44,8 +44,19 @@ export default async function CaptainDashboard({
 
   const pool = poolResult[0];
 
+  // If no cookie but token present, show RecoveryHandler to set cookie and redirect
+  if (!cookieSecret && queryToken) {
+    return (
+      <div className="min-h-screen p-4">
+        <main className="max-w-2xl mx-auto">
+          <RecoveryHandler code={code} redirectPath={`/pool/${code}/captain`} />
+        </main>
+      </div>
+    );
+  }
+
   // Verify captain secret
-  if (!secret || !safeCompareSecrets(secret, pool.captainSecret)) {
+  if (!cookieSecret || !safeCompareSecrets(cookieSecret, pool.captainSecret)) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="max-w-md w-full shadow-lg">
@@ -75,7 +86,7 @@ export default async function CaptainDashboard({
   const participantResult = await db
     .select()
     .from(players)
-    .where(and(eq(players.poolId, pool.id), eq(players.secret, secret)))
+    .where(and(eq(players.poolId, pool.id), eq(players.secret, cookieSecret)))
     .limit(1);
 
   if (participantResult.length > 0) {

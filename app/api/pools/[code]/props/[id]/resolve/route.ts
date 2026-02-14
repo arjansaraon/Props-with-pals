@@ -230,7 +230,7 @@ export async function resolvePropHandler(
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error resolving prop:', error);
+    console.error('Error resolving prop:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { code: 'INTERNAL_ERROR', message: 'Failed to resolve prop' },
       { status: 500 }
