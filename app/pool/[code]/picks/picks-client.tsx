@@ -53,7 +53,8 @@ export function PicksClient({
         <div className="pt-4">
           <Button
             onClick={handleSubmit}
-            className="w-full h-14 text-lg bg-emerald-600 hover:bg-emerald-700"
+            variant="success"
+            className="w-full h-12"
           >
             Submit Picks
           </Button>

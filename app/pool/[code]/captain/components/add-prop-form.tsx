@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X, Star } from 'lucide-react';
 
 interface AddPropFormProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ interface AddPropFormProps {
   options: string[];
   pointValue: string;
   category: string;
+  underdogOptionIndices: number[];
   existingCategories: string[];
   isAddingProp: boolean;
   onOpenChange: (open: boolean) => void;
@@ -22,6 +23,7 @@ interface AddPropFormProps {
   onAddOption: () => void;
   onUpdateOption: (index: number, value: string) => void;
   onRemoveOption: (index: number) => void;
+  onToggleUnderdog: (index: number) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }
 
@@ -31,6 +33,7 @@ export function AddPropForm({
   options,
   pointValue,
   category,
+  underdogOptionIndices,
   existingCategories,
   isAddingProp,
   onOpenChange,
@@ -40,6 +43,7 @@ export function AddPropForm({
   onAddOption,
   onUpdateOption,
   onRemoveOption,
+  onToggleUnderdog,
   onSubmit,
 }: AddPropFormProps) {
   if (!isOpen) {
@@ -102,28 +106,42 @@ export function AddPropForm({
 
           <div className="space-y-2">
             <Label>Options</Label>
-            {options.map((option, index) => (
-              <div key={index} className="flex gap-2">
-                <Input
-                  type="text"
-                  value={option}
-                  onChange={(e) => onUpdateOption(index, e.target.value)}
-                  placeholder={`Option ${index + 1}`}
-                  aria-label={`Option ${index + 1}`}
-                  required
-                />
-                {options.length > 2 && (
-                  <Button
+            {options.map((option, index) => {
+              const isUnderdog = underdogOptionIndices.includes(index);
+              return (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={option}
+                    onChange={(e) => onUpdateOption(index, e.target.value)}
+                    placeholder={`Option ${index + 1}`}
+                    aria-label={`Option ${index + 1}`}
+                    required
+                  />
+                  <button
                     type="button"
-                    variant="ghost"
-                    onClick={() => onRemoveOption(index)}
-                    className="text-destructive hover:text-destructive"
+                    onClick={() => onToggleUnderdog(index)}
+                    aria-label={isUnderdog ? 'Remove underdog designation' : 'Mark as underdog (2× points if correct)'}
+                    title={isUnderdog ? 'Underdog (2× points) — click to remove' : 'Mark as underdog (2× points if correct)'}
+                    className={`shrink-0 p-2 rounded hover:bg-muted transition-colors ${
+                      isUnderdog ? 'text-amber-500' : 'text-muted-foreground hover:text-amber-500'
+                    }`}
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
+                    <Star className={`h-4 w-4 ${isUnderdog ? 'fill-amber-500' : ''}`} />
+                  </button>
+                  {options.length > 2 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => onRemoveOption(index)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
             {options.length < 10 && (
               <Button
                 type="button"

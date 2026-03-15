@@ -152,7 +152,7 @@ export function CaptainClient({
           <Button
             onClick={handleLockPool}
             disabled={isLocking}
-            className="bg-amber-600 hover:bg-amber-700"
+            variant="warning"
           >
             <Lock className="h-4 w-4" />
             {isLocking ? 'Locking...' : 'Lock Pool'}
@@ -286,9 +286,9 @@ export function CaptainClient({
                           {poolStatus === 'locked' && !isResolved && (
                             <Button
                               size="sm"
+                              variant="success"
                               onClick={() => handleResolve(prop.id, index)}
                               disabled={resolvingPropId === prop.id}
-                              className="bg-emerald-600 hover:bg-emerald-700"
                             >
                               {resolvingPropId === prop.id ? '...' : 'Mark Correct'}
                             </Button>

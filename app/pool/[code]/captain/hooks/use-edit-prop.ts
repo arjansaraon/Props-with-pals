@@ -15,6 +15,7 @@ interface EditFormState {
   options: string[];
   pointValue: string;
   category: string;
+  underdogOptionIndices: number[];
 }
 
 interface UseEditPropReturn {
@@ -30,6 +31,7 @@ interface UseEditPropReturn {
   addOption: () => void;
   updateOption: (index: number, value: string) => void;
   removeOption: (index: number) => void;
+  toggleUnderdog: (index: number) => void;
   saveChanges: () => Promise<void>;
 }
 
@@ -43,6 +45,7 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
     options: ['', ''],
     pointValue: '10',
     category: '',
+    underdogOptionIndices: [],
   });
   const [isSaving, setIsSaving] = useState(false);
   const [hasPicksWarning, setHasPicksWarning] = useState(false);
@@ -55,7 +58,6 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
         const data = await response.json();
         setHasPicksWarning(data.count > 0);
       } else {
-        // If endpoint doesn't exist, assume no warning needed
         setHasPicksWarning(false);
       }
     } catch {
@@ -68,6 +70,7 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
       options: [...prop.options],
       pointValue: String(prop.pointValue),
       category: prop.category || '',
+      underdogOptionIndices: prop.underdogOptionIndices ?? [],
     });
   }
 
@@ -79,6 +82,7 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
       options: ['', ''],
       pointValue: '10',
       category: '',
+      underdogOptionIndices: [],
     });
   }
 
@@ -113,8 +117,21 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
       setEditForm((prev) => ({
         ...prev,
         options: prev.options.filter((_, i) => i !== index),
+        // Remove the deleted index and shift down any higher indices
+        underdogOptionIndices: prev.underdogOptionIndices
+          .filter((i) => i !== index)
+          .map((i) => (i > index ? i - 1 : i)),
       }));
     }
+  }
+
+  function toggleUnderdog(index: number) {
+    setEditForm((prev) => ({
+      ...prev,
+      underdogOptionIndices: prev.underdogOptionIndices.includes(index)
+        ? prev.underdogOptionIndices.filter((i) => i !== index)
+        : [...prev.underdogOptionIndices, index],
+    }));
   }
 
   async function saveChanges() {
@@ -132,6 +149,7 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
           options: editForm.options.filter((o) => o.trim() !== ''),
           pointValue: parseInt(editForm.pointValue, 10),
           category: editForm.category.trim() || undefined,
+          underdogOptionIndices: editForm.underdogOptionIndices,
         }),
       });
 
@@ -145,7 +163,7 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
       cancelEditing();
       router.refresh();
     } catch {
-      onError('Failed to update prop. Please try again.');
+      onError('Network error. Please check your connection and try again.');
     } finally {
       setIsSaving(false);
     }
@@ -164,6 +182,7 @@ export function useEditProp({ code, onError }: UseEditPropProps): UseEditPropRet
     addOption,
     updateOption,
     removeOption,
+    toggleUnderdog,
     saveChanges,
   };
 }

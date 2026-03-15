@@ -41,7 +41,18 @@ export async function createPropHandler(
       );
     }
 
-    const { questionText, options, pointValue, category } = parseResult.data;
+    const { questionText, options, pointValue, category, underdogOptionIndices } = parseResult.data;
+
+    // Validate underdog indices are within options bounds
+    if (underdogOptionIndices) {
+      const outOfBounds = underdogOptionIndices.some((i) => i >= options.length);
+      if (outOfBounds) {
+        return NextResponse.json(
+          { code: 'VALIDATION_ERROR', message: 'underdogOptionIndices contains an index out of range' },
+          { status: 400 }
+        );
+      }
+    }
 
     // Get the next order number
     const countResult = await database
@@ -62,6 +73,7 @@ export async function createPropHandler(
       options,
       pointValue,
       category: category ?? null,
+      underdogOptionIndices: underdogOptionIndices ?? null,
       correctOptionIndex: null,
       status: 'active',
       order: nextOrder,
@@ -77,6 +89,7 @@ export async function createPropHandler(
         options,
         pointValue,
         category: category ?? null,
+        underdogOptionIndices: underdogOptionIndices ?? null,
         correctOptionIndex: null,
         status: 'active',
         order: nextOrder,

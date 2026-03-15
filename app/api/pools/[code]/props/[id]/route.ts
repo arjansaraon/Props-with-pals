@@ -63,8 +63,20 @@ export async function updatePropHandler(
       );
     }
 
-    const { questionText, options, pointValue, category } = parseResult.data;
+    const { questionText, options, pointValue, category, underdogOptionIndices } = parseResult.data;
     const now = new Date().toISOString();
+
+    // Validate underdog indices against effective options length
+    if (underdogOptionIndices != null) {
+      const effectiveOptions = options ?? (propResult[0].options as string[]);
+      const outOfBounds = underdogOptionIndices.some((i) => i >= effectiveOptions.length);
+      if (outOfBounds) {
+        return NextResponse.json(
+          { code: 'VALIDATION_ERROR', message: 'underdogOptionIndices contains an index out of range' },
+          { status: 400 }
+        );
+      }
+    }
 
     // In open: can edit everything
     const updates: Partial<typeof props.$inferInsert> = { updatedAt: now };
@@ -80,6 +92,12 @@ export async function updatePropHandler(
     }
     if (category !== undefined) {
       updates.category = category || null;
+    }
+    if (underdogOptionIndices !== undefined) {
+      updates.underdogOptionIndices = underdogOptionIndices ?? [];
+    } else if (options !== undefined) {
+      // When options are updated without re-specifying underdogs, clear them to prevent stale indices
+      updates.underdogOptionIndices = [];
     }
 
     await database.update(props).set(updates).where(eq(props.id, propId));

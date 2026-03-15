@@ -29,7 +29,7 @@ Getting people into a pool should take seconds, not minutes.
 Everyone should understand the state at a glance.
 
 **Guidelines**:
-- Obvious pool status (draft/open/locked/completed)
+- Obvious pool status (open/locked/completed)
 - Clear indication of submitted vs. not submitted
 - Visible point values
 - Unambiguous leaderboard
@@ -114,8 +114,8 @@ Use CSS variables for easy dark mode later.
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `--color-primary` | Indigo #6366F1 | Primary buttons, links, selected states |
-| `--color-primary-hover` | #4F46E5 | Hover states |
+| `--color-primary` | Blue #2563EB | Primary buttons, links, selected states |
+| `--color-primary-hover` | Blue #2563EB/90 | Hover states |
 | `--color-success` | Green #10B981 | Correct picks, positive feedback |
 | `--color-error` | Red #EF4444 | Wrong picks, errors |
 | `--color-warning` | Amber #F59E0B | Warnings, pending states |

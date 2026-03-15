@@ -55,10 +55,10 @@ export function LeaderboardStats({ summary, perPropStats }: LeaderboardStatsProp
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Highlights</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             {summary.mostAgreed && (
               <div className="flex items-start gap-3">
-                <Target className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" />
+                <Target className="h-4 w-4 text-emerald-600 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground">
                     <span className="font-medium">Most agreed:</span>{' '}
@@ -73,7 +73,7 @@ export function LeaderboardStats({ summary, perPropStats }: LeaderboardStatsProp
 
             {summary.mostDivisive && (
               <div className="flex items-start gap-3">
-                <Split className="h-4 w-4 mt-0.5 text-amber-600 shrink-0" />
+                <Split className="h-4 w-4 text-amber-600 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground">
                     <span className="font-medium">Most divisive:</span>{' '}
@@ -88,13 +88,13 @@ export function LeaderboardStats({ summary, perPropStats }: LeaderboardStatsProp
 
             {summary.biggestUpset && (
               <div className="flex items-start gap-3">
-                <AlertTriangle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground">
                     <span className="font-medium">Biggest upset:</span>{' '}
                     <span className="text-muted-foreground">{truncate(summary.biggestUpset.questionText, 50)}</span>
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {summary.biggestUpset.popularPercent}% picked{' '}
                     <span className="text-destructive">{truncate(summary.biggestUpset.popularOption, 20)}</span>
                     {' · '}Actual: <span className="text-emerald-600">{truncate(summary.biggestUpset.correctOption, 20)}</span>
@@ -113,7 +113,7 @@ export function LeaderboardStats({ summary, perPropStats }: LeaderboardStatsProp
             <CollapsibleTrigger asChild>
               <button
                 type="button"
-                className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+                className="w-full flex items-center justify-between px-6 py-4 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
               >
                 <span>Pick Popularity</span>
                 <ChevronDown
@@ -127,7 +127,7 @@ export function LeaderboardStats({ summary, perPropStats }: LeaderboardStatsProp
                   {grouped.map((group) => (
                     <div key={group.category ?? '__uncategorized'}>
                       {group.category && (
-                        <div className="flex items-center gap-2 mt-3 mb-2">
+                        <div className="flex items-center gap-2 mt-4 mb-2">
                           <div className="h-px flex-1 bg-border" />
                           <span className="text-xs font-medium text-muted-foreground px-2">{group.category}</span>
                           <div className="h-px flex-1 bg-border" />
@@ -146,7 +146,7 @@ export function LeaderboardStats({ summary, perPropStats }: LeaderboardStatsProp
                             <span className="text-sm text-foreground truncate flex-1 min-w-0">
                               {prop.questionText}
                             </span>
-                            <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="flex items-center gap-2 shrink-0">
                               {stats.totalPicks > 0 && (
                                 <Badge variant="secondary" className="text-xs whitespace-nowrap">
                                   {stats.mostPopularPercent}% {truncate(popularOption, 15)}

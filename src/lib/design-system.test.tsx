@@ -109,6 +109,46 @@ describe('PlayerPicksView', () => {
     });
   });
 
+  describe('Option States', () => {
+    it('correct answer has emerald border and bg', async () => {
+      const { PlayerPicksView } = await import(
+        '@/app/pool/[code]/player/[participantId]/player-picks-view'
+      );
+      const { container } = render(
+        <PlayerPicksView
+          code="test-code"
+          playerName="TestPlayer"
+          totalPoints={42}
+          props={[
+            {
+              id: 'prop-1',
+              questionText: 'Who will win?',
+              options: ['Team A', 'Team B'],
+              pointValue: 10,
+              correctOptionIndex: 0,
+              selectedOptionIndex: 1,
+            },
+          ]}
+          stats={{ correct: 0, wrong: 1, pending: 0, unanswered: 0 }}
+        />
+      );
+      // Option divs use border-2 (Cards use border)
+      const optionDivs = container.querySelectorAll('[class*="border-2"]');
+      const correctOption = optionDivs[0];
+      expect(correctOption.className).toContain('border-emerald-500');
+      expect(correctOption.className).toContain('bg-emerald-50');
+    });
+
+    it('selected unresolved pick uses bg-primary/10', async () => {
+      const { container } = await renderPlayerPicksView();
+      // Option divs use border-2 (Cards use border)
+      const optionDivs = container.querySelectorAll('[class*="border-2"]');
+      const selectedOption = optionDivs[0];
+      expect(selectedOption.className).toContain('bg-primary/10');
+      expect(selectedOption.className).not.toContain('bg-accent');
+    });
+  });
+
   describe('Typography', () => {
     it('heading has tracking-tight', async () => {
       await renderPlayerPicksView();
@@ -127,6 +167,65 @@ describe('PlayerPicksView', () => {
       const totalPoints = screen.getByText(/42 total points/);
       expect(totalPoints.className).toContain('font-mono');
     });
+  });
+});
+
+describe('Button Variants', () => {
+  async function renderButton(variant: string) {
+    const { Button } = await import('@/app/components/ui/button');
+    return render(<Button variant={variant as any}>Test</Button>);
+  }
+
+  it('variant="success" renders emerald classes', async () => {
+    const { container } = await renderButton('success');
+    const button = container.querySelector('button')!;
+    expect(button.className).toContain('bg-emerald-600');
+    expect(button.className).toContain('hover:bg-emerald-700');
+    expect(button.className).toContain('text-white');
+  });
+
+  it('variant="warning" renders amber classes', async () => {
+    const { container } = await renderButton('warning');
+    const button = container.querySelector('button')!;
+    expect(button.className).toContain('bg-amber-600');
+    expect(button.className).toContain('hover:bg-amber-700');
+    expect(button.className).toContain('text-white');
+  });
+});
+
+describe('PicksView', () => {
+  async function renderPicksView() {
+    const { PicksView } = await import('@/app/components/picks-view');
+    const myPicks = new Map([['prop-1', 0]]);
+    return render(
+      <PicksView
+        poolStatus="open"
+        propsList={[
+          {
+            id: 'prop-1',
+            questionText: 'Who will win?',
+            options: ['Team A', 'Team B'],
+            pointValue: 10,
+            correctOptionIndex: null,
+            category: null,
+          },
+        ]}
+        myPicks={myPicks}
+        submitting={null}
+        pickError={null}
+        pickedCount={1}
+        allPicked={false}
+        progressPercent={50}
+        handlePick={() => {}}
+      />
+    );
+  }
+
+  it('selected option uses bg-primary/10 (not bg-primary/5)', async () => {
+    const { container } = await renderPicksView();
+    const selectedButton = container.querySelector('[class*="border-primary"]')!;
+    expect(selectedButton.className).toContain('bg-primary/10');
+    expect(selectedButton.className).not.toContain('bg-primary/5');
   });
 });
 

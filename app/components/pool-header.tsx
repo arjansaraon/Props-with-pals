@@ -114,7 +114,7 @@ export function PoolHeader({
 
           <button
             onClick={() => setShowHelp(!showHelp)}
-            className="text-muted-foreground hover:text-foreground p-2 transition-colors"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted p-2 rounded-md transition-colors"
           >
             <HelpCircle className="h-4 w-4" />
           </button>

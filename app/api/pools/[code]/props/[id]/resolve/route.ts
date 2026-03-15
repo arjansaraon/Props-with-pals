@@ -107,10 +107,13 @@ export async function resolvePropHandler(
         .from(picks)
         .where(eq(picks.propId, propId));
 
-      // 3. Calculate and update points for each pick
+      // 3. Calculate and update points for each pick (underdogs earn 2x)
+      const underdogIndices = (prop.underdogOptionIndices as number[] | null) ?? [];
       for (const pick of allPicks) {
-        const pointsEarned =
-          pick.selectedOptionIndex === correctOptionIndex ? prop.pointValue : 0;
+        const isCorrect = pick.selectedOptionIndex === correctOptionIndex;
+        const isUnderdogPick = underdogIndices.includes(pick.selectedOptionIndex);
+        const multiplier = isUnderdogPick ? 2 : 1;
+        const pointsEarned = isCorrect ? prop.pointValue * multiplier : 0;
 
         await tx
           .update(picks)
@@ -197,6 +200,7 @@ export async function resolvePropHandler(
           options: updatedProp[0].options,
           pointValue: updatedProp[0].pointValue,
           correctOptionIndex: updatedProp[0].correctOptionIndex,
+          underdogOptionIndices: updatedProp[0].underdogOptionIndices ?? null,
           status: updatedProp[0].status,
         },
         pool: {

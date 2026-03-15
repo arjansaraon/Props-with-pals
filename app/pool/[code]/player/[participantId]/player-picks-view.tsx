@@ -48,14 +48,14 @@ export function PlayerPicksView({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-2xl font-bold tracking-tight">{playerName}'s Picks</CardTitle>
-              <p className="text-sm font-mono text-muted-foreground mt-1">
+              <p className="text-sm font-mono text-muted-foreground mt-2">
                 {totalPoints} total points
               </p>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="flex flex-wrap gap-3 mt-4">
+          <div className="flex flex-wrap gap-4 mt-4">
             <span className="inline-flex items-center gap-1 text-sm text-emerald-600">
               <Check className="h-4 w-4" />
               {stats.correct} correct
@@ -80,7 +80,7 @@ export function PlayerPicksView({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             <Button variant="outline" asChild>
               <Link href={`/pool/${code}/leaderboard`}>
                 <ArrowLeft className="h-4 w-4 mr-1" />
@@ -122,19 +122,23 @@ export function PlayerPicksView({
                     <div
                       key={index}
                       className={`px-4 py-3 rounded-lg border-2 ${
-                        isWrongSelection
-                          ? 'border-destructive bg-red-50'
-                          : isSelected && !isResolved
-                            ? 'border-primary bg-accent'
-                            : 'border-border'
+                        isCorrectOption
+                          ? 'border-emerald-500 bg-emerald-50'
+                          : isWrongSelection
+                            ? 'border-destructive bg-red-50'
+                            : isSelected && !isResolved
+                              ? 'border-primary bg-primary/10'
+                              : 'border-border'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <span
                           className={
-                            isWrongSelection
-                              ? 'text-destructive'
-                              : 'text-foreground'
+                            isCorrectOption
+                              ? 'text-emerald-800'
+                              : isWrongSelection
+                                ? 'text-destructive'
+                                : 'text-foreground'
                           }
                         >
                           {option}
@@ -150,7 +154,9 @@ export function PlayerPicksView({
                           </div>
                         )}
                         {isCorrectOption && (
-                          <Check className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-emerald-600 text-sm flex items-center gap-1">
+                            <Check className="h-4 w-4" /> Correct
+                          </span>
                         )}
                         {isWrongSelection && (
                           <div className="flex items-center gap-2">
@@ -176,7 +182,7 @@ export function PlayerPicksView({
               </div>
 
               {!hasPick && (
-                <p className="text-sm text-muted-foreground mt-3 italic">
+                <p className="text-sm text-muted-foreground mt-4 italic">
                   No pick submitted
                 </p>
               )}

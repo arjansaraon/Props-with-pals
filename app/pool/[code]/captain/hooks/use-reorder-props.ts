@@ -9,6 +9,7 @@ import type { Prop } from '@/app/types/domain';
 interface UseReorderPropsProps {
   code: string;
   propsList: Prop[];
+  onError: (message: string) => void;
 }
 
 interface UseReorderPropsReturn {
@@ -16,7 +17,7 @@ interface UseReorderPropsReturn {
   handleDragEnd: (event: DragEndEvent) => void;
 }
 
-export function useReorderProps({ code, propsList }: UseReorderPropsProps): UseReorderPropsReturn {
+export function useReorderProps({ code, propsList, onError }: UseReorderPropsProps): UseReorderPropsReturn {
   const router = useRouter();
   const [optimisticOrder, setOptimisticOrder] = useState<Prop[] | null>(null);
 
@@ -44,16 +45,16 @@ export function useReorderProps({ code, propsList }: UseReorderPropsProps): UseR
       })
         .then((res) => {
           if (!res.ok) {
-            // Revert on error
             setOptimisticOrder(null);
+            onError('Failed to save new order. Props have been reset to their original order.');
           } else {
-            // Clear optimistic state and refresh server data
             setOptimisticOrder(null);
             router.refresh();
           }
         })
         .catch(() => {
           setOptimisticOrder(null);
+          onError('Network error while reordering. Props have been reset to their original order.');
         });
     },
     [code, propsList, optimisticOrder, router]

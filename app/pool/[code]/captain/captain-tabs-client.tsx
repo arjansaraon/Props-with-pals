@@ -36,13 +36,13 @@ export function CaptainTabsClient({
   });
 
   // Players state (via hook)
-  const { players, isLoading: isLoadingPlayers } = usePlayers({
+  const { players, isLoading: isLoadingPlayers, error: playersError } = usePlayers({
     code,
     shouldLoad: activeTab === 'players',
   });
 
   // Drag-and-drop reorder (via hook)
-  const { orderedProps, handleDragEnd } = useReorderProps({ code, propsList });
+  const { orderedProps, handleDragEnd } = useReorderProps({ code, propsList, onError: setError });
 
   // Existing categories for autocomplete
   const existingCategories = useMemo(
@@ -92,6 +92,7 @@ export function CaptainTabsClient({
             code={code}
             players={players}
             isLoading={isLoadingPlayers}
+            error={playersError}
           />
         </TabsContent>
       </Tabs>

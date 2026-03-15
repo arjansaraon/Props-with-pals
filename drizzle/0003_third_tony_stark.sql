@@ -1,0 +1,1 @@
+ALTER TABLE `props` ADD `underdog_option_indices` text;

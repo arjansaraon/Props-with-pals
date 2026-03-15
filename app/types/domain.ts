@@ -12,6 +12,7 @@ export interface Prop {
   options: string[];
   pointValue: number;
   correctOptionIndex: number | null;
+  underdogOptionIndices?: number[] | null;
   status?: string;
   order?: number;
   category?: string | null;

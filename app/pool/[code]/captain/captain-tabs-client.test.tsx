@@ -234,6 +234,7 @@ describe('CaptainTabsClient', () => {
                   questionText: 'Test Question?',
                   options: ['Option A', 'Option B'],
                   pointValue: 10,
+                  underdogOptionIndices: [],
                 }),
               })
             );

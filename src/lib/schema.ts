@@ -40,6 +40,7 @@ export const props = sqliteTable('props', {
   pointValue: integer('point_value').notNull(),
   correctOptionIndex: integer('correct_option_index'),
   category: text('category'),
+  underdogOptionIndices: text('underdog_option_indices', { mode: 'json' }).$type<number[]>(),
   status: text('status', { enum: propStatusValues }).notNull().default('active'),
   order: integer('order').notNull(),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),

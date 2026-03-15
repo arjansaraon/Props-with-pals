@@ -77,7 +77,7 @@ export default function Home() {
       // Navigate to the pool join page (keep loading state until page transitions)
       router.push(`/pool/${normalizedCode}`);
     } catch {
-      setJoinError('Failed to find pool. Please try again.');
+      setJoinError('Network error. Please check your connection and try again.');
       setIsJoining(false);
     }
   }
@@ -112,7 +112,7 @@ export default function Home() {
       // Redirect to captain dashboard (keep loading state until page transitions)
       router.push(`/pool/${data.inviteCode}/captain`);
     } catch {
-      setCreateError('Failed to create pool. Please try again.');
+      setCreateError('Network error. Please check your connection and try again.');
       setIsCreating(false);
     }
   }
@@ -123,7 +123,7 @@ export default function Home() {
         {/* Join Pool - Primary Action */}
         <Card className="shadow-lg">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl font-bold tracking-tight">Props With Pals</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight text-primary">Props With Pals</CardTitle>
             <CardDescription>Make prop bets with your friends</CardDescription>
           </CardHeader>
           <CardContent>
@@ -149,7 +149,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setJoinError('')}
-                      className="ml-2 hover:opacity-70"
+                      className="ml-2 rounded-sm p-0.5 hover:bg-destructive/20 transition-colors"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -174,7 +174,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setShowCreate(!showCreate)}
-            className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-accent transition-colors"
+            className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
           >
             <span className="font-medium text-foreground">
               Create a New Pool
@@ -196,7 +196,7 @@ export default function Home() {
                     id="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g., Super Bowl 2026"
+                    placeholder="e.g., Super Bowl Party"
                     required
                     maxLength={100}
                   />
@@ -238,7 +238,7 @@ export default function Home() {
                     maxLength={20}
                   />
                   <p className="text-xs text-muted-foreground">
-                    A code has been suggested. Feel free to customize it.
+                    Auto-generated. Customize if you'd like.
                   </p>
                 </div>
 
@@ -250,7 +250,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setCreateError('')}
-                        className="ml-2 hover:opacity-70"
+                        className="ml-2 rounded-sm p-0.5 hover:bg-destructive/20 transition-colors"
                       >
                         <X className="h-4 w-4" />
                       </button>

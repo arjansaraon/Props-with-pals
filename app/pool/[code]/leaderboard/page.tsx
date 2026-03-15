@@ -2,7 +2,7 @@ import { db } from '@/src/lib/db';
 import { pools, players, props, picks } from '@/src/lib/schema';
 import { eq, desc, asc, and, isNotNull } from 'drizzle-orm';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Card, CardContent } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
 import {
   Table,
@@ -134,25 +134,23 @@ export default async function Leaderboard({
     <div className="min-h-screen p-4">
       <main className="max-w-2xl mx-auto">
         {/* Header */}
-        <Card className="shadow-lg mb-6">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <CardTitle className="text-2xl font-bold tracking-tight">{pool.name} Leaderboard</CardTitle>
-              <Badge variant={statusVariant}>
-                {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
-              </Badge>
-            </div>
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-1">
             <Link
               href={isCaptain ? `/pool/${code}/captain` : `/pool/${code}/picks`}
-              className="text-primary hover:text-primary/80 text-sm font-medium"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {isCaptain ? '← Back to admin board' : '← Back to my picks'}
             </Link>
-          </CardHeader>
-        </Card>
+            <Badge variant={statusVariant}>
+              {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
+            </Badge>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">{pool.name} Leaderboard</h1>
+        </div>
 
         {/* Leaderboard */}
-        <Card className="shadow-md overflow-hidden">
+        <Card className="shadow-lg overflow-hidden">
           {leaderboard.length === 0 ? (
             <CardContent className="py-6">
               <p className="text-muted-foreground text-center">
@@ -173,97 +171,67 @@ export default async function Leaderboard({
                   const rank = index + 1;
                   const isWinner = pool.status === 'completed' && rank === 1;
                   const isClickable = pool.status !== 'open';
+                  const isTop3 = hasResolvedProps && rank <= 3;
 
-                  const rowContent = (
-                    <>
-                      <TableCell>
-                        <span
-                          className={`text-sm font-medium ${
-                            hasResolvedProps && rank === 1
-                              ? 'text-amber-500'
-                              : hasResolvedProps && rank === 2
-                                ? 'text-slate-400'
-                                : hasResolvedProps && rank === 3
-                                  ? 'text-amber-600'
-                                  : 'text-muted-foreground'
-                          }`}
-                        >
-                          {hasResolvedProps && rank === 1 && '🥇 '}
-                          {hasResolvedProps && rank === 2 && '🥈 '}
-                          {hasResolvedProps && rank === 3 && '🥉 '}
-                          {rank}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground">
-                            {participant.name}
-                          </span>
-                          {participant.isCaptain && (
-                            <Badge variant="secondary" className="text-xs">Captain</Badge>
-                          )}
-                          {isWinner && (
-                            <span className="text-amber-500">
-                              Winner!
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className="text-sm font-semibold font-mono tabular-nums text-foreground">
-                          {hasResolvedProps ? participant.totalPoints : '—'}
-                        </span>
-                      </TableCell>
-                    </>
+                  const rankColor = hasResolvedProps && rank === 1
+                    ? 'text-amber-500'
+                    : hasResolvedProps && rank === 2
+                      ? 'text-slate-400'
+                      : hasResolvedProps && rank === 3
+                        ? 'text-amber-600'
+                        : 'text-muted-foreground';
+
+                  const medal = hasResolvedProps && rank === 1 ? '🥇'
+                    : hasResolvedProps && rank === 2 ? '🥈'
+                    : hasResolvedProps && rank === 3 ? '🥉'
+                    : null;
+
+                  const rowBg = isWinner
+                    ? 'bg-amber-50/60'
+                    : isTop3
+                      ? 'bg-muted/30'
+                      : '';
+
+                  const rankCell = (className?: string) => (
+                    <span className={`text-sm font-medium ${rankColor} ${className ?? ''}`}>
+                      {medal && `${medal} `}{rank}
+                    </span>
+                  );
+
+                  const nameCell = (className?: string) => (
+                    <span className={`flex items-center gap-2 ${className ?? ''}`}>
+                      <span className={`text-sm text-foreground ${isWinner ? 'font-semibold' : 'font-medium'}`}>
+                        {participant.name}
+                      </span>
+                      {participant.isCaptain && (
+                        <Badge variant="secondary" className="text-xs">Captain</Badge>
+                      )}
+                      {isWinner && (
+                        <span className="text-amber-500 text-sm font-semibold">Winner!</span>
+                      )}
+                    </span>
+                  );
+
+                  const pointsCell = (className?: string) => (
+                    <span className={`text-sm font-semibold font-mono tabular-nums text-foreground ${className ?? ''}`}>
+                      {hasResolvedProps ? participant.totalPoints : '—'}
+                    </span>
                   );
 
                   if (isClickable) {
                     return (
                       <TableRow
                         key={participant.id}
-                        className={`cursor-pointer hover:bg-muted/50 transition-colors ${
-                          isWinner ? 'bg-amber-50 hover:bg-amber-100'
-                          : hasResolvedProps && rank === 1 ? 'bg-amber-50/60 border-l-4 border-l-amber-400'
-                          : hasResolvedProps && rank === 2 ? 'bg-slate-50/60 border-l-4 border-l-slate-300'
-                          : hasResolvedProps && rank === 3 ? 'bg-amber-50/40 border-l-4 border-l-amber-600/40'
-                          : ''
-                        }`}
+                        className={`cursor-pointer hover:bg-muted/50 transition-colors ${rowBg}`}
                       >
                         <TableCell colSpan={3} className="p-0">
                           <Link
                             href={`/pool/${code}/player/${participant.id}`}
                             className="flex w-full items-center"
                           >
-                            <span className={`flex-none w-20 px-4 py-4 text-sm font-medium ${
-                              hasResolvedProps && rank === 1
-                                ? 'text-amber-500'
-                                : hasResolvedProps && rank === 2
-                                  ? 'text-slate-400'
-                                  : hasResolvedProps && rank === 3
-                                    ? 'text-amber-600'
-                                    : 'text-muted-foreground'
-                            }`}>
-                              {hasResolvedProps && rank === 1 && '🥇 '}
-                              {hasResolvedProps && rank === 2 && '🥈 '}
-                              {hasResolvedProps && rank === 3 && '🥉 '}
-                              {rank}
-                            </span>
-                            <span className="flex-1 px-4 py-4 flex items-center gap-2">
-                              <span className={`text-sm text-foreground ${isWinner ? 'font-semibold' : 'font-medium'}`}>
-                                {participant.name}
-                              </span>
-                              {participant.isCaptain && (
-                                <Badge variant="secondary" className="text-xs">Captain</Badge>
-                              )}
-                              {isWinner && (
-                                <span className="text-amber-500 font-semibold">
-                                  Winner!
-                                </span>
-                              )}
-                            </span>
-                            <span className="flex-none px-4 py-4 text-right text-sm font-semibold font-mono tabular-nums text-foreground">
-                              {hasResolvedProps ? participant.totalPoints : '—'}
-                            </span>
+                            <span className="flex-none w-20 px-4 py-4">{rankCell()}</span>
+                            <span className="flex-1 px-4 py-4">{nameCell()}</span>
+                            <span className="flex-none px-4 py-4 text-right">{pointsCell()}</span>
                           </Link>
                         </TableCell>
                       </TableRow>
@@ -273,15 +241,11 @@ export default async function Leaderboard({
                   return (
                     <TableRow
                       key={participant.id}
-                      className={`hover:bg-muted/50 transition-colors ${
-                        isWinner ? 'bg-amber-50'
-                        : hasResolvedProps && rank === 1 ? 'bg-amber-50/60 border-l-4 border-l-amber-400'
-                        : hasResolvedProps && rank === 2 ? 'bg-slate-50/60 border-l-4 border-l-slate-300'
-                        : hasResolvedProps && rank === 3 ? 'bg-amber-50/40 border-l-4 border-l-amber-600/40'
-                        : ''
-                      }`}
+                      className={`hover:bg-muted/50 transition-colors ${rowBg}`}
                     >
-                      {rowContent}
+                      <TableCell>{rankCell()}</TableCell>
+                      <TableCell>{nameCell()}</TableCell>
+                      <TableCell className="text-right">{pointsCell()}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -300,10 +264,10 @@ export default async function Leaderboard({
 
         {/* Helper text */}
         {leaderboard.length > 0 && (pool.status === 'open' || !hasResolvedProps) && (
-          <p className="text-xs text-muted-foreground text-center mt-3">
+          <p className="text-xs text-muted-foreground text-center mt-4">
             {pool.status === 'open'
-              ? 'View other players\' picks after the pool locks'
-              : 'Scores will appear once answers are revealed'}
+              ? 'Picks are visible after the pool locks'
+              : 'Scores update as the captain reveals answers'}
           </p>
         )}
 
@@ -311,7 +275,7 @@ export default async function Leaderboard({
           <Alert className="mt-6 border-emerald-200 bg-emerald-50">
             <Trophy className="h-4 w-4 text-emerald-600" />
             <AlertDescription className="text-emerald-800">
-              🎉 Pool completed! Congratulations to{' '}
+              Pool completed! Congratulations to{' '}
               <strong>{leaderboard[0].name}</strong> for winning with{' '}
               {leaderboard[0].totalPoints} points!
             </AlertDescription>

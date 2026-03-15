@@ -4,7 +4,7 @@ import { Spinner } from '@/app/components/spinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Progress } from '@/app/components/ui/progress';
-import { AlertCircle, Check, X, Lock } from 'lucide-react';
+import { AlertCircle, Check, X, Lock, Star } from 'lucide-react';
 import { Badge } from '@/app/components/ui/badge';
 import type { Prop, SubmittingState } from '@/app/types/domain';
 
@@ -70,7 +70,7 @@ export function PicksView({
 
       {/* Sticky Progress Tracker */}
       {poolStatus !== 'completed' && totalProps > 0 && (
-        <div className="sticky top-0 z-10 bg-background py-3 -mx-4 px-4 border-b border-border">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-4 border-b border-border">
           <div className="flex items-center justify-between mb-2">
             <span className={`text-sm font-medium ${allPicked ? 'text-emerald-600' : 'text-muted-foreground'}`}>
               {allPicked ? '✓ All picks completed' : `${pickedCount} of ${totalProps} answered`}
@@ -98,7 +98,7 @@ export function PicksView({
         groupPropsByCategory(propsList).map((group) => (
           <div key={group.category ?? '__uncategorized'}>
             {group.category && (
-              <div className="flex items-center gap-3 mt-6 mb-3">
+              <div className="flex items-center gap-3 mt-6 mb-4">
                 <Badge variant="secondary" className="text-sm">{group.category}</Badge>
                 <div className="h-px flex-1 bg-border" />
               </div>
@@ -133,6 +133,7 @@ export function PicksView({
                         const isCorrect = isResolved && prop.correctOptionIndex === index;
                         const isWrong = isResolved && isSelected && prop.correctOptionIndex !== index;
                         const isSaving = submitting?.propId === prop.id && submitting?.index === index;
+                        const isUnderdog = (prop.underdogOptionIndices ?? []).includes(index);
 
                         return (
                           <button
@@ -145,21 +146,27 @@ export function PicksView({
                                 : isWrong
                                   ? 'border-destructive bg-red-50'
                                   : isSelected
-                                    ? 'border-primary bg-primary/5'
+                                    ? 'border-primary bg-primary/10'
                                     : 'bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/30'
                             } ${poolStatus === 'completed' ? 'cursor-default' : 'cursor-pointer'}`}
                           >
                             <div className="flex items-center justify-between">
                               <span
-                                className={
+                                className={`flex items-center gap-2 ${
                                   isCorrect
                                     ? 'text-emerald-800'
                                     : isWrong
                                       ? 'text-destructive'
                                       : 'text-foreground'
-                                }
+                                }`}
                               >
                                 {option}
+                                {isUnderdog && (
+                                  <span className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+                                    <Star className="h-3 w-3 fill-amber-500" />
+                                    2×
+                                  </span>
+                                )}
                               </span>
                               {isSaving && <Spinner size="sm" />}
                               {!isSaving && isSelected && !isResolved && (

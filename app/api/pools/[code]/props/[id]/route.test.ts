@@ -506,3 +506,104 @@ describe('DELETE /api/pools/[code]/props/[id]', () => {
     });
   });
 });
+
+describe('PATCH /api/pools/[code]/props/[id] - Underdog Option Indices', () => {
+  let db: Database;
+  let cleanup: () => void;
+
+  beforeEach(async () => {
+    const setup = await setupTestDb();
+    db = setup.db as Database;
+    cleanup = setup.cleanup;
+  });
+
+  afterEach(() => {
+    cleanup?.();
+  });
+
+  async function createTestPool(inviteCode: string) {
+    const now = new Date().toISOString();
+    const poolData = {
+      id: crypto.randomUUID(),
+      name: 'Test Pool',
+      inviteCode,
+      captainName: 'Captain',
+      captainSecret: crypto.randomUUID(),
+      status: 'open' as const,
+      buyInAmount: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await db.insert(pools).values(poolData);
+    return poolData;
+  }
+
+  async function createTestProp(poolId: string, overrides: Partial<typeof props.$inferInsert> = {}) {
+    const now = new Date().toISOString();
+    const propData = {
+      id: crypto.randomUUID(),
+      poolId,
+      questionText: 'Who wins?',
+      options: ['Team A', 'Team B'],
+      pointValue: 10,
+      correctOptionIndex: null,
+      category: null,
+      status: 'active' as const,
+      order: 0,
+      createdAt: now,
+      updatedAt: now,
+      ...overrides,
+    };
+    await db.insert(props).values(propData);
+    return propData;
+  }
+
+  it('saves underdogOptionIndices when PATCHing only underdogs (no options change)', async () => {
+    const pool = await createTestPool('EDPU1');
+    const prop = await createTestProp(pool.id);
+
+    const response = await updatePropHandler(
+      createPatchRequest('EDPU1', prop.id, pool.captainSecret, {
+        underdogOptionIndices: [1],
+      }),
+      'EDPU1', prop.id, db
+    );
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data.underdogOptionIndices).toEqual([1]);
+  });
+
+  it('rejects out-of-bounds underdogOptionIndices (400)', async () => {
+    const pool = await createTestPool('EDPU2');
+    const prop = await createTestProp(pool.id); // has 2 options: indices 0 and 1 valid
+
+    const response = await updatePropHandler(
+      createPatchRequest('EDPU2', prop.id, pool.captainSecret, {
+        underdogOptionIndices: [5],
+      }),
+      'EDPU2', prop.id, db
+    );
+
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('auto-resets underdogOptionIndices to [] when options are updated without specifying underdogs', async () => {
+    const pool = await createTestPool('EDPU3');
+    const prop = await createTestProp(pool.id, { underdogOptionIndices: [1] });
+
+    // PATCH only options — no underdogOptionIndices in request
+    const response = await updatePropHandler(
+      createPatchRequest('EDPU3', prop.id, pool.captainSecret, {
+        options: ['Team A', 'Team B', 'Team C'],
+      }),
+      'EDPU3', prop.id, db
+    );
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data.underdogOptionIndices).toEqual([]);
+  });
+});

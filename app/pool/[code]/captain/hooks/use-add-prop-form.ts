@@ -14,6 +14,7 @@ interface UseAddPropFormReturn {
   options: string[];
   pointValue: string;
   category: string;
+  underdogOptionIndices: number[];
   isAddingProp: boolean;
   isFormOpen: boolean;
   setQuestionText: (value: string) => void;
@@ -23,6 +24,7 @@ interface UseAddPropFormReturn {
   addOption: () => void;
   updateOption: (index: number, value: string) => void;
   removeOption: (index: number) => void;
+  toggleUnderdog: (index: number) => void;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }
 
@@ -34,6 +36,7 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
   const [options, setOptions] = useState(['', '']);
   const [pointValue, setPointValue] = useState('10');
   const [category, setCategory] = useState('');
+  const [underdogOptionIndices, setUnderdogOptionIndices] = useState<number[]>([]);
   const [isAddingProp, setIsAddingProp] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
@@ -52,7 +55,17 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
   function removeOption(index: number) {
     if (options.length > 2) {
       setOptions(options.filter((_, i) => i !== index));
+      // Remove the deleted index and shift down any higher indices
+      setUnderdogOptionIndices((prev) =>
+        prev.filter((i) => i !== index).map((i) => (i > index ? i - 1 : i))
+      );
     }
+  }
+
+  function toggleUnderdog(index: number) {
+    setUnderdogOptionIndices((prev) =>
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+    );
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -69,6 +82,7 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
           options: options.filter((o) => o.trim() !== ''),
           pointValue: parseInt(pointValue, 10),
           category: category.trim() || undefined,
+          underdogOptionIndices,
         }),
       });
 
@@ -82,11 +96,12 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
       setOptions(['', '']);
       setPointValue('10');
       setCategory('');
+      setUnderdogOptionIndices([]);
       setIsFormOpen(false);
       showToast('Prop added successfully', 'success');
       router.refresh();
     } catch {
-      onError('Failed to add prop. Please try again.');
+      onError('Network error. Please check your connection and try again.');
     } finally {
       setIsAddingProp(false);
     }
@@ -97,6 +112,7 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
     options,
     pointValue,
     category,
+    underdogOptionIndices,
     isAddingProp,
     isFormOpen,
     setQuestionText,
@@ -106,6 +122,7 @@ export function useAddPropForm({ code, onError }: UseAddPropFormProps): UseAddPr
     addOption,
     updateOption,
     removeOption,
+    toggleUnderdog,
     handleSubmit,
   };
 }

@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/app/components/ui/alert-dialog';
-import { Plus, Trash2, Check, Pencil, AlertTriangle, GripVertical, X } from 'lucide-react';
+import { Plus, Trash2, Check, Pencil, AlertTriangle, GripVertical, X, Star } from 'lucide-react';
 import type { Prop } from '@/app/types/domain';
 
 interface EditFormState {
@@ -25,6 +25,7 @@ interface EditFormState {
   options: string[];
   pointValue: string;
   category: string;
+  underdogOptionIndices: number[];
 }
 
 interface PropCardProps {
@@ -49,6 +50,7 @@ interface PropCardProps {
   onAddOption: () => void;
   onUpdateOption: (index: number, value: string) => void;
   onRemoveOption: (index: number) => void;
+  onToggleUnderdog: (index: number) => void;
 }
 
 export function PropCard({
@@ -73,6 +75,7 @@ export function PropCard({
   onAddOption,
   onUpdateOption,
   onRemoveOption,
+  onToggleUnderdog,
 }: PropCardProps) {
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -144,27 +147,41 @@ export function PropCard({
 
             <div className="space-y-2">
               <Label>Options</Label>
-              {editForm.options.map((option, index) => (
-                <div key={index} className="flex gap-2">
-                  <Input
-                    type="text"
-                    value={option}
-                    onChange={(e) => onUpdateOption(index, e.target.value)}
-                    placeholder={`Option ${index + 1}`}
-                    aria-label={`Option ${index + 1}`}
-                  />
-                  {editForm.options.length > 2 && (
-                    <Button
+              {editForm.options.map((option, index) => {
+                const isUnderdog = editForm.underdogOptionIndices.includes(index);
+                return (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={option}
+                      onChange={(e) => onUpdateOption(index, e.target.value)}
+                      placeholder={`Option ${index + 1}`}
+                      aria-label={`Option ${index + 1}`}
+                    />
+                    <button
                       type="button"
-                      variant="ghost"
-                      onClick={() => onRemoveOption(index)}
-                      className="text-destructive hover:text-destructive"
+                      onClick={() => onToggleUnderdog(index)}
+                      aria-label={isUnderdog ? 'Remove underdog designation' : 'Mark as underdog (2× points if correct)'}
+                      title={isUnderdog ? 'Underdog (2× points) — click to remove' : 'Mark as underdog (2× points if correct)'}
+                      className={`shrink-0 p-2 rounded hover:bg-muted transition-colors ${
+                        isUnderdog ? 'text-amber-500' : 'text-muted-foreground hover:text-amber-500'
+                      }`}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+                      <Star className={`h-4 w-4 ${isUnderdog ? 'fill-amber-500' : ''}`} />
+                    </button>
+                    {editForm.options.length > 2 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => onRemoveOption(index)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
               {editForm.options.length < 10 && (
                 <Button
                   type="button"
@@ -211,6 +228,8 @@ export function PropCard({
   }
 
   // View mode
+  const underdogIndices = prop.underdogOptionIndices ?? [];
+
   return (
     <Card className="shadow-md">
       <CardContent className="pt-6">
@@ -257,6 +276,7 @@ export function PropCard({
           {prop.options.map((option, index) => {
             const isCorrect = prop.correctOptionIndex === index;
             const isResolved = prop.correctOptionIndex !== null;
+            const isUnderdog = underdogIndices.includes(index);
 
             return (
               <div
@@ -266,17 +286,24 @@ export function PropCard({
                 }`}
               >
                 <div className="flex justify-between items-center">
-                  <span className={isCorrect ? 'text-emerald-800' : 'text-foreground'}>
+                  <span className={`flex items-center gap-2 ${isCorrect ? 'text-emerald-800' : 'text-foreground'}`}>
                     {option}
+                    {isUnderdog && (
+                      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+                        <Star className="h-3 w-3 fill-amber-500" />
+                        2×
+                      </span>
+                    )}
                   </span>
                   {isCorrect && (
-                    <span className="text-emerald-600 text-sm flex items-center gap-1">
+                    <span className="text-emerald-600 text-sm flex items-center gap-1 shrink-0">
                       <Check className="h-4 w-4" /> Correct
                     </span>
                   )}
                   {poolStatus === 'locked' && !isResolved && (
                     <Button
                       size="sm"
+                      variant="success"
                       onClick={() => setConfirmDialog({
                         isOpen: true,
                         optionIndex: index,
@@ -284,7 +311,6 @@ export function PropCard({
                         isChange: false,
                       })}
                       disabled={resolvingPropId === prop.id}
-                      className="bg-emerald-600 hover:bg-emerald-700"
                     >
                       {resolvingPropId === prop.id ? '...' : 'Mark Correct'}
                     </Button>

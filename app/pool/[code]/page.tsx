@@ -45,7 +45,7 @@ export default function JoinPool({
         const data = await response.json();
         setPool(data);
       } catch {
-        setError('Failed to load pool');
+        setError('Network error. Please check your connection and try again.');
       } finally {
         setIsLoading(false);
       }
@@ -84,7 +84,7 @@ export default function JoinPool({
       // Redirect directly to picks (keep loading state until page transitions)
       router.push(`/pool/${code}/picks?welcome=true`);
     } catch {
-      setError('Failed to join pool. Please try again.');
+      setError('Network error. Please check your connection and try again.');
       setIsJoining(false);
     }
   }
@@ -174,7 +174,7 @@ export default function JoinPool({
                     <button
                       type="button"
                       onClick={() => setError('')}
-                      className="ml-2 hover:opacity-70"
+                      className="ml-2 rounded-sm p-0.5 hover:bg-destructive/20 transition-colors"
                     >
                       <X className="h-4 w-4" />
                     </button>

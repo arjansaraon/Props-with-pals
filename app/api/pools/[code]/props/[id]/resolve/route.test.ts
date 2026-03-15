@@ -487,6 +487,134 @@ describe('POST /api/pools/[code]/props/[id]/resolve', () => {
     });
   });
 
+  describe('Underdog Scoring', () => {
+    async function createUnderdogTestSetup(
+      inviteCode: string,
+      underdogOptionIndices: number[]
+    ) {
+      const now = new Date().toISOString();
+      const poolId = crypto.randomUUID();
+      const captainSecret = crypto.randomUUID();
+
+      await db.insert(pools).values({
+        id: poolId,
+        name: 'Underdog Pool',
+        inviteCode,
+        captainName: 'Captain',
+        captainSecret,
+        status: 'locked',
+        buyInAmount: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const propId = crypto.randomUUID();
+      await db.insert(props).values({
+        id: propId,
+        poolId,
+        questionText: 'Who will win?',
+        options: ['Team A', 'Team B', 'Team C'],
+        pointValue: 10,
+        correctOptionIndex: null,
+        underdogOptionIndices,
+        category: null,
+        status: 'active',
+        order: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const aliceId = crypto.randomUUID();
+      const bobId = crypto.randomUUID();
+      const carolId = crypto.randomUUID();
+
+      await db.insert(players).values([
+        { id: aliceId, poolId, name: 'Alice', secret: crypto.randomUUID(), totalPoints: 0, paid: null, status: 'active', joinedAt: now, updatedAt: now },
+        { id: bobId, poolId, name: 'Bob', secret: crypto.randomUUID(), totalPoints: 0, paid: null, status: 'active', joinedAt: now, updatedAt: now },
+        { id: carolId, poolId, name: 'Carol', secret: crypto.randomUUID(), totalPoints: 0, paid: null, status: 'active', joinedAt: now, updatedAt: now },
+      ]);
+
+      // Alice picks 0 (Team A, not underdog), Bob picks 1 (Team B, underdog), Carol picks 2 (Team C, underdog)
+      await db.insert(picks).values([
+        { id: crypto.randomUUID(), playerId: aliceId, propId, selectedOptionIndex: 0, pointsEarned: null, createdAt: now, updatedAt: now },
+        { id: crypto.randomUUID(), playerId: bobId, propId, selectedOptionIndex: 1, pointsEarned: null, createdAt: now, updatedAt: now },
+        { id: crypto.randomUUID(), playerId: carolId, propId, selectedOptionIndex: 2, pointsEarned: null, createdAt: now, updatedAt: now },
+      ]);
+
+      return { poolId, propId, captainSecret, aliceId, bobId, carolId };
+    }
+
+    it('correct underdog pick earns pointValue * 2', async () => {
+      const { propId, captainSecret, bobId } = await createUnderdogTestSetup('RESU1', [1]);
+
+      // Resolve: Team B (index 1) is correct — Bob picked it and it's an underdog
+      await resolvePropHandler(
+        createRequest('RESU1', propId, captainSecret, { correctOptionIndex: 1 }),
+        'RESU1', propId, db
+      );
+
+      const bobPicks = await db.select().from(picks).where(eq(picks.playerId, bobId));
+      expect(bobPicks[0].pointsEarned).toBe(20); // 10 * 2
+    });
+
+    it('correct non-underdog pick earns pointValue (1x)', async () => {
+      const { propId, captainSecret, aliceId } = await createUnderdogTestSetup('RESU2', [1, 2]);
+
+      // Resolve: Team A (index 0) is correct — Alice picked it, not an underdog
+      await resolvePropHandler(
+        createRequest('RESU2', propId, captainSecret, { correctOptionIndex: 0 }),
+        'RESU2', propId, db
+      );
+
+      const alicePicks = await db.select().from(picks).where(eq(picks.playerId, aliceId));
+      expect(alicePicks[0].pointsEarned).toBe(10); // 1x, not underdog
+    });
+
+    it('wrong underdog pick earns 0 points', async () => {
+      const { propId, captainSecret, bobId } = await createUnderdogTestSetup('RESU3', [1]);
+
+      // Resolve: Team A (index 0) is correct — Bob picked Team B (index 1), wrong even though underdog
+      await resolvePropHandler(
+        createRequest('RESU3', propId, captainSecret, { correctOptionIndex: 0 }),
+        'RESU3', propId, db
+      );
+
+      const bobPicks = await db.select().from(picks).where(eq(picks.playerId, bobId));
+      expect(bobPicks[0].pointsEarned).toBe(0);
+    });
+
+    it('null underdogOptionIndices falls back to 1x scoring', async () => {
+      // createFullTestSetup creates a prop without underdogOptionIndices (null)
+      const { propId, captainSecret, participant2Id } = await createFullTestSetup('RESU4');
+
+      await resolvePropHandler(
+        createRequest('RESU4', propId, captainSecret, { correctOptionIndex: 1 }),
+        'RESU4', propId, db
+      );
+
+      const bobPicks = await db.select().from(picks).where(eq(picks.playerId, participant2Id));
+      expect(bobPicks[0].pointsEarned).toBe(10); // null → treated as no underdogs → 1x
+    });
+
+    it('multiple underdogs — correct underdog pick earns 2x regardless of which underdog', async () => {
+      // Both Team B (1) and Team C (2) are underdogs; resolve with Team C correct
+      const { propId, captainSecret, carolId, bobId } = await createUnderdogTestSetup('RESU5', [1, 2]);
+
+      await resolvePropHandler(
+        createRequest('RESU5', propId, captainSecret, { correctOptionIndex: 2 }),
+        'RESU5', propId, db
+      );
+
+      // Carol picked Team C (index 2, underdog, correct) → 2x
+      const carolPicks = await db.select().from(picks).where(eq(picks.playerId, carolId));
+      expect(carolPicks[0].pointsEarned).toBe(20);
+
+      // Bob picked Team B (index 1, underdog, wrong) → 0
+      const bobPicks = await db.select().from(picks).where(eq(picks.playerId, bobId));
+      expect(bobPicks[0].pointsEarned).toBe(0);
+    });
+  });
+
   describe('Edge Cases', () => {
     it('handles prop with no picks', async () => {
       const now = new Date().toISOString();

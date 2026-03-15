@@ -37,7 +37,7 @@ export function useAdminActions({ code, onError }: UseAdminActionsProps): UseAdm
       url: `/api/pools/${code}`,
       method: 'PATCH',
       body: { status: 'locked' },
-      errorFallback: 'Failed to lock pool. Please try again.',
+      errorFallback: 'Something went wrong locking the pool. Please try again.',
     });
     if (result.ok) {
       showToast('Pool is now locked', 'success');
@@ -55,7 +55,7 @@ export function useAdminActions({ code, onError }: UseAdminActionsProps): UseAdm
       url: `/api/pools/${code}`,
       method: 'PATCH',
       body: { status: 'completed' },
-      errorFallback: 'Failed to complete pool. Please try again.',
+      errorFallback: 'Something went wrong completing the pool. Please try again.',
     });
     if (result.ok) {
       showToast('Pool completed! Check the leaderboard for final results.', 'success');
@@ -73,7 +73,7 @@ export function useAdminActions({ code, onError }: UseAdminActionsProps): UseAdm
       url: `/api/pools/${code}/props/${propId}/resolve`,
       method: 'POST',
       body: { correctOptionIndex },
-      errorFallback: 'Failed to resolve prop. Please try again.',
+      errorFallback: 'Something went wrong resolving this prop. Please try again.',
     });
     if (result.ok) {
       showToast('Prop resolved! Points have been awarded.', 'success');
@@ -90,7 +90,7 @@ export function useAdminActions({ code, onError }: UseAdminActionsProps): UseAdm
     const result = await apiMutation({
       url: `/api/pools/${code}/props/${propId}`,
       method: 'DELETE',
-      errorFallback: 'Failed to delete prop. Please try again.',
+      errorFallback: 'Something went wrong deleting this prop. Please try again.',
     });
     if (result.ok) {
       showToast('Prop deleted', 'success');

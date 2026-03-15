@@ -110,6 +110,7 @@ export const CreatePropSchema = z.object({
     .int('Point value must be a whole number')
     .positive('Point value must be positive'),
   category: z.string().max(50).transform(stripHtml).optional(),
+  underdogOptionIndices: z.array(z.number().int().nonnegative()).optional(),
 });
 
 export type CreatePropInput = z.infer<typeof CreatePropSchema>;
@@ -142,6 +143,7 @@ export const UpdatePropSchema = z.object({
     .positive('Point value must be positive')
     .optional(),
   category: z.string().max(50).transform(stripHtml).nullable().optional(),
+  underdogOptionIndices: z.array(z.number().int().nonnegative()).nullable().optional(),
 });
 
 export type UpdatePropInput = z.infer<typeof UpdatePropSchema>;

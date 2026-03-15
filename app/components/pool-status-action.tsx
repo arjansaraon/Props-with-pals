@@ -60,13 +60,13 @@ export function PoolStatusAction({ code, initialStatus, onStatusChange }: PoolSt
     <div className="flex items-center gap-3">
       <Badge variant={current.variant}>{current.label}</Badge>
       {status === 'open' && (
-        <Button onClick={handleLock} disabled={isLoading} size="sm" className="bg-amber-600 hover:bg-amber-700">
+        <Button onClick={handleLock} disabled={isLoading} size="sm" variant="warning">
           {isLoading ? <Spinner size="sm" /> : <Lock className="h-4 w-4 mr-1" />}
           Lock Pool
         </Button>
       )}
       {status === 'locked' && (
-        <Button onClick={handleComplete} disabled={isLoading} size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={handleComplete} disabled={isLoading} size="sm" variant="success">
           {isLoading ? <Spinner size="sm" /> : <Trophy className="h-4 w-4 mr-1" />}
           Complete Pool
         </Button>

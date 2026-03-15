@@ -91,6 +91,7 @@ function SortablePropCard({ prop, poolStatus, editProp, adminActions, existingCa
         onAddOption={editProp.addOption}
         onUpdateOption={editProp.updateOption}
         onRemoveOption={editProp.removeOption}
+        onToggleUnderdog={editProp.toggleUnderdog}
       />
     </div>
   );
@@ -112,6 +113,7 @@ interface AddPropFormReturn {
   options: string[];
   pointValue: string;
   category: string;
+  underdogOptionIndices: number[];
   isAddingProp: boolean;
   isFormOpen: boolean;
   setQuestionText: (value: string) => void;
@@ -121,6 +123,7 @@ interface AddPropFormReturn {
   addOption: () => void;
   updateOption: (index: number, value: string) => void;
   removeOption: (index: number) => void;
+  toggleUnderdog: (index: number) => void;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }
 
@@ -129,6 +132,7 @@ interface EditFormState {
   options: string[];
   pointValue: string;
   category: string;
+  underdogOptionIndices: number[];
 }
 
 interface EditPropReturn {
@@ -144,6 +148,7 @@ interface EditPropReturn {
   addOption: () => void;
   updateOption: (index: number, value: string) => void;
   removeOption: (index: number) => void;
+  toggleUnderdog: (index: number) => void;
   saveChanges: () => Promise<void>;
 }
 
@@ -245,6 +250,7 @@ export function AdminTab({
           options={addPropForm.options}
           pointValue={addPropForm.pointValue}
           category={addPropForm.category}
+          underdogOptionIndices={addPropForm.underdogOptionIndices}
           existingCategories={existingCategories}
           isAddingProp={addPropForm.isAddingProp}
           onOpenChange={addPropForm.setIsFormOpen}
@@ -254,6 +260,7 @@ export function AdminTab({
           onAddOption={addPropForm.addOption}
           onUpdateOption={addPropForm.updateOption}
           onRemoveOption={addPropForm.removeOption}
+          onToggleUnderdog={addPropForm.toggleUnderdog}
           onSubmit={addPropForm.handleSubmit}
         />
       )}

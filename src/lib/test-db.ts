@@ -45,6 +45,7 @@ export async function setupTestDb() {
       point_value INTEGER NOT NULL,
       correct_option_index INTEGER,
       category TEXT,
+      underdog_option_indices TEXT,
       status TEXT NOT NULL DEFAULT 'active',
       "order" INTEGER NOT NULL,
       created_at TEXT NOT NULL,

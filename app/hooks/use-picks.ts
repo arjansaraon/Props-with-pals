@@ -90,6 +90,8 @@ export function usePicks({
           const data = await response.json();
           if (data.code === 'UNAUTHORIZED') message = 'Session expired. Please refresh the page.';
           else if (data.code === 'POOL_COMPLETED') message = 'Pool is completed. Picks can no longer be changed.';
+          else if (data.code === 'PROP_NOT_FOUND') message = 'This prop no longer exists. Please refresh the page.';
+          else if (data.code === 'VALIDATION_ERROR') message = data.message;
           else if (data.message) message = data.message;
         } catch { /* use default message */ }
         rollback(message);

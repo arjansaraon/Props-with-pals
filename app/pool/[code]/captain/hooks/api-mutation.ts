@@ -11,7 +11,7 @@ interface ApiMutationOptions {
  */
 export async function apiMutation(
   options: ApiMutationOptions
-): Promise<{ ok: true } | { ok: false; message: string }> {
+): Promise<{ ok: true } | { ok: false; message: string; code?: string }> {
   try {
     const init: RequestInit = { method: options.method };
     if (options.body !== undefined) {
@@ -20,11 +20,11 @@ export async function apiMutation(
     }
     const response = await fetch(options.url, init);
     if (!response.ok) {
-      const data = await response.json();
-      return { ok: false, message: data.message || options.errorFallback };
+      const data = await response.json().catch(() => ({}));
+      return { ok: false, message: data.message || options.errorFallback, code: data.code };
     }
     return { ok: true };
   } catch {
-    return { ok: false, message: options.errorFallback };
+    return { ok: false, message: 'Network error. Please check your connection and try again.' };
   }
 }

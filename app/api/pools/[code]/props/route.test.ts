@@ -344,4 +344,44 @@ describe('POST /api/pools/[code]/props', () => {
       expect(data.code).toBe('POOL_NOT_FOUND');
     });
   });
+
+  describe('Underdog Option Indices', () => {
+    it('creates prop with underdogOptionIndices and returns them', async () => {
+      const pool = await createTestPool({ inviteCode: 'PRPU1' });
+
+      const response = await createPropHandler(
+        createRequest('PRPU1', pool.captainSecret, {
+          questionText: 'Who wins?',
+          options: ['Team A', 'Team B', 'Team C'],
+          pointValue: 10,
+          underdogOptionIndices: [2],
+        }),
+        'PRPU1',
+        db
+      );
+
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.underdogOptionIndices).toEqual([2]);
+    });
+
+    it('rejects underdogOptionIndices with out-of-bounds index', async () => {
+      const pool = await createTestPool({ inviteCode: 'PRPU2' });
+
+      const response = await createPropHandler(
+        createRequest('PRPU2', pool.captainSecret, {
+          questionText: 'Who wins?',
+          options: ['Team A', 'Team B'],
+          pointValue: 10,
+          underdogOptionIndices: [5], // only indices 0 and 1 are valid
+        }),
+        'PRPU2',
+        db
+      );
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe('VALIDATION_ERROR');
+    });
+  });
 });

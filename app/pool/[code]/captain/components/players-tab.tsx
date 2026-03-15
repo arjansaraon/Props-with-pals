@@ -2,17 +2,20 @@
 
 import { Spinner } from '@/app/components/spinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Badge } from '@/app/components/ui/badge';
 import { CopyLinkButton } from '@/app/components/copy-link-button';
+import { AlertCircle } from 'lucide-react';
 import type { Player } from '../types';
 
 interface PlayersTabProps {
   code: string;
   players: Player[];
   isLoading: boolean;
+  error: string | null;
 }
 
-export function PlayersTab({ code, players, isLoading }: PlayersTabProps) {
+export function PlayersTab({ code, players, isLoading, error }: PlayersTabProps) {
   return (
     <Card className="shadow-md">
       <CardHeader>
@@ -22,7 +25,12 @@ export function PlayersTab({ code, players, isLoading }: PlayersTabProps) {
         </p>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {error ? (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : isLoading ? (
           <div className="flex justify-center py-8">
             <Spinner size="lg" className="text-primary" />
           </div>

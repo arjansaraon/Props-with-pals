@@ -12,6 +12,7 @@ interface UsePlayersReturn {
   players: Player[];
   isLoading: boolean;
   isLoaded: boolean;
+  error: string | null;
   reload: () => void;
 }
 
@@ -19,6 +20,7 @@ export function usePlayers({ code, shouldLoad }: UsePlayersProps): UsePlayersRet
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (shouldLoad && !isLoaded) {
@@ -28,6 +30,7 @@ export function usePlayers({ code, shouldLoad }: UsePlayersProps): UsePlayersRet
 
   async function loadPlayers() {
     setIsLoading(true);
+    setError(null);
     try {
       const response = await fetch(`/api/pools/${code}/players`, {
         credentials: 'include',
@@ -36,9 +39,11 @@ export function usePlayers({ code, shouldLoad }: UsePlayersProps): UsePlayersRet
         const data = await response.json();
         setPlayers(data.players);
         setIsLoaded(true);
+      } else {
+        setError('Unable to load players list. Please try switching tabs to reload.');
       }
-    } catch (err) {
-      console.error('Failed to load participants:', err);
+    } catch {
+      setError('Network error loading players. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -52,6 +57,7 @@ export function usePlayers({ code, shouldLoad }: UsePlayersProps): UsePlayersRet
     players,
     isLoading,
     isLoaded,
+    error,
     reload,
   };
 }
