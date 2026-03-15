@@ -157,6 +157,7 @@ export default async function PlayerPicks({
               pointValue: p.pointValue,
               correctOptionIndex: p.correctOptionIndex,
               category: p.category,
+              underdogOptionIndices: p.underdogOptionIndices as number[] | null,
             }))}
             initialPicks={myPicks}
             poolStatus={pool.status}
